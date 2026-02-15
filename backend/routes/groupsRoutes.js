@@ -6,7 +6,7 @@ const groupModel = require('../models/Group');
 
 
 router.post('/:userID/create_group', validateUser, async (req, res) => {
-    let { groupName, destination, members } = req.body;
+    let { groupName, description, members } = req.body;
 
     let user = await userModel.findOne({ _id: req.params.userID });
 
@@ -18,7 +18,7 @@ router.post('/:userID/create_group', validateUser, async (req, res) => {
 
     let createdGroup = await groupModel.create({
         groupName,
-        destination,
+        description,
         members
     });
 
@@ -41,7 +41,7 @@ router.get('/:groupID/getGroup', async (req, res) => {
                                         select: 'name'
                                     },
                                     {
-                                        path: 'participants',
+                                        path: 'participants.userID',
                                         select: 'name'
                                     }, 
                                     ]

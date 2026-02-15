@@ -8,6 +8,10 @@ router.post('/register', registerUser);
 
 router.post('/login', loginUser);
 
+router.get('/validateUser', validateUser, (req, res) => {
+     res.send({ success: true });
+});
+
 router.post('/validateMember', validateUser, async (req, res) => {
      let email = req.body.email;
 

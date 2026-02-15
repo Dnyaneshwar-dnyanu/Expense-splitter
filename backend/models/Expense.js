@@ -8,12 +8,19 @@ let expenseSchema = mongoose.Schema({
         ref: 'User'
     },
     participants: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        userID: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        sharedAmount: Number
     }],
     addedAt: {
         type: Date,
         default: Date.now()
+    },
+    groupID: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Group'
     }
 });
 
