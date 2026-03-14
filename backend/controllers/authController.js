@@ -4,42 +4,46 @@ const { generateToken } = require('../utils/generateToken')
 const userModel = require('../models/User');
 
 module.exports.registerUser = async (req, res) => {
-    let user = await userModel.findOne({ email: req.body.email });
+    try {
+        let user = await userModel.findOne({ email: req.body.email });
 
-    if (!user) {
-        let { name, email, password } = req.body;
+        if (!user) {
+            let { name, email, password } = req.body;
 
-        bcrypt.genSalt(10, function (err, salt) {
-            bcrypt.hash(password, salt, async function (err, hash) {
-                user = await userModel.create({
-                    name, email, password: hash
-                });
+            const salt = await bcrypt.genSalt(10);
+            const hash = await bcrypt.hash(password, salt);
 
-                user.password = undefined;
-                let token = generateToken(user);
-                res.cookie("token", token, {
-                    httpOnly: true,
-                    secure: true,
-                    sameSite: "none",
-                    maxAge: 24 * 60 * 60 * 1000
-                });
-
-                return res.send({ auth: true, user: user });
+            user = await userModel.create({
+                name, email, password: hash
             });
-        });
-        return;
-    }
 
-    return res.send({ auth: false, message: "This email already registered!" });
+            user.password = undefined;
+            let token = generateToken(user);
+            res.cookie("token", token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: "none",
+                maxAge: 24 * 60 * 60 * 1000
+            });
+
+            return res.send({ auth: true, user: user });
+        }
+
+        return res.send({ auth: false, message: "This email already registered!" });
+    } catch (error) {
+        console.error("Error in registerUser:", error);
+        return res.status(500).send({ auth: false, message: "Internal Server Error" });
+    }
 }
 
 module.exports.loginUser = async (req, res) => {
+    try {
+        let user = await userModel.findOne({ email: req.body.email });
 
-    let user = await userModel.findOne({ email: req.body.email });
+        if (user) {
+            const isMatch = await bcrypt.compare(req.body.password, user.password);
 
-    if (user) {
-        bcrypt.compare(req.body.password, user.password, (err, result) => {
-            if (result) {
+            if (isMatch) {
                 user.password = undefined;
                 let token = generateToken(user);
                 
@@ -53,10 +57,12 @@ module.exports.loginUser = async (req, res) => {
                 return res.send({ auth: true, user: user });
             }
             return res.send({ auth: false, message: "Invalid password" });
-        })
-        return;
+        }
+        return res.send({ auth: false, message: "Invalid email" });
+    } catch (error) {
+        console.error("Error in loginUser:", error);
+        return res.status(500).send({ auth: false, message: "Internal Server Error" });
     }
-    return res.send({ auth: false, message: "Invalid email" });
 }
 
 module.exports.logoutUser = async (req, res) => {

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { toast } from "react-toastify";
+import { motion } from "framer-motion";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -12,75 +13,92 @@ export default function Login() {
   };
 
   const login = async () => {
+    try {
+      if (form.email.trim().length < 3 || form.password.trim().length < 3) {
+        toast.error("Fill the correct details!")
+        return;
+      }
+      
+      let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(form),
+      });
 
-    if (form.email.trim().length < 3 || form.password.trim().length < 3) {
-      toast.error("Fill the correct details!")
-      return;
-    }
-    
-    let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(form),
-    });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        toast.error(errorData.message || "Login failed on server.");
+        return;
+      }
 
-    let data = await res.json();
+      let data = await res.json();
 
-    if (data.auth) {
-      navigate(`/${data.user._id}/dashboard`);
-      toast.success("logged in successfully!");
-    }
-    else {
-      toast.error(data.message);
-      setForm({ email: "", password: "" });
+      if (data.auth) {
+        navigate(`/${data.user._id}/dashboard`);
+        toast.success("logged in successfully!");
+      }
+      else {
+        toast.error(data.message);
+        setForm({ ...form, password: "" });
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      toast.error("Network error, please try again later.");
     }
   };
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-200 via-white to-emerald-200 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-200 via-white to-emerald-200 px-4 py-8">
       {/* Card */}
-      <div className="w-full max-w-4xl bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden grid md:grid-cols-2">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-4xl bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden grid md:grid-cols-2"
+      >
 
-        {/* Left Side */}
-        <div className="hidden md:flex flex-col justify-between p-10 bg-gradient-to-br from-sky-500 to-emerald-500 text-white">
-          <div>
-            <h1 className="text-3xl font-bold tracking-wide">TripNest 🌍</h1>
-            <p className="mt-3 text-white/90">
-              Login to explore breathtaking places and plan your next journey.
+        {/* Left Branding Side */}
+        <div className="hidden md:flex flex-col justify-between p-10 bg-gradient-to-br from-emerald-500 to-sky-500 text-white">
+          <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
+            <h1 className="text-3xl font-bold tracking-wide">SplitWise 💳</h1>
+            <p className="mt-3 text-white/90 font-medium">
+              Simplify your shared expenses and manage balances effortlessly.
             </p>
-          </div>
+          </motion.div>
 
-          {/* Tourist Illustration */}
+          {/* Illustration */}
           <div className="mt-10">
             <div className="relative w-full h-52">
-              <div className="absolute bottom-0 left-0 w-full h-28 bg-emerald-900/30 rounded-t-[100px]" />
+              <div className="absolute bottom-0 left-0 w-full h-28 bg-sky-900/30 rounded-t-[100px]" />
               <div className="absolute bottom-0 left-10 w-40 h-24 bg-white/20 rounded-t-[80px]" />
               <div className="absolute bottom-0 right-10 w-52 h-32 bg-white/15 rounded-t-[100px]" />
               <div className="absolute top-2 left-10 w-16 h-16 bg-yellow-200 rounded-full blur-sm" />
             </div>
-            <p className="text-sm text-white/90 mt-2">
-              “Adventure begins after login.”
+            <p className="text-sm text-white/90 mt-4 font-bold italic">
+              “Split bills → Settle debts → Save friendships 🤝”
             </p>
           </div>
 
           <p className="text-xs text-white/70">
-            © {new Date().getFullYear()} TripNest. All rights reserved.
+            © {new Date().getFullYear()} SplitWise. All rights reserved.
           </p>
         </div>
 
         {/* Right Login Form */}
-        <div className="p-8 md:p-10 text-black">
-          <h2 className="text-2xl font-bold text-gray-800">Welcome back ✈️</h2>
-          <p className="text-gray-500 mt-1">
-            Login to continue your journey
-          </p>
+        <div className="p-8 md:p-10 text-black flex flex-col justify-center">
+          <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}>
+            <h2 className="text-3xl font-black text-gray-800">Welcome back 👋</h2>
+            <p className="text-gray-500 mt-2 font-medium">
+              Login to manage your expenses
+            </p>
+          </motion.div>
 
         {/* Login Form */}
-          <div className="mt-8 space-y-5">
+          <div className="mt-10 space-y-5">
             {/* Email */}
-            <div>
-              <label className="text-sm font-medium text-gray-700">
-                Email
+            <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.4 }}>
+              <label className="text-sm font-bold text-gray-700 ml-1">
+                Email Address
               </label>
               <input
                 type="email"
@@ -88,13 +106,13 @@ export default function Login() {
                 onChange={handleChange}
                 name="email"
                 value={form.email}
-                className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-sky-200 focus:border-sky-400 transition"
+                className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-sky-200 focus:border-sky-400 transition bg-white/50"
               />
-            </div>
+            </motion.div>
 
             {/* Password */}
-            <div>
-              <label className="text-sm font-medium text-gray-700">
+            <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5 }}>
+              <label className="text-sm font-bold text-gray-700 ml-1">
                 Password
               </label>
               <input
@@ -103,36 +121,41 @@ export default function Login() {
                 onChange={handleChange}
                 name="password"
                 value={form.password}
-                className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-emerald-200 focus:border-emerald-400 transition"
+                className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-emerald-200 focus:border-emerald-400 transition bg-white/50"
               />
-            </div>
+            </motion.div>
 
             {/* Button */}
-            <button
-              onClick={() => login()}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 text-white font-semibold hover:opacity-90 transition shadow-lg"
-            >
-              Login
-            </button>
+            <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.6 }}>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => login()}
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 text-white font-black shadow-lg hover:shadow-xl transition active:shadow-inner"
+              >
+                Login to Account
+              </motion.button>
+            </motion.div>
 
             {/* Register link */}
-            <p className="text-sm text-gray-600 text-center">
-              New user?{" "}
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="text-sm text-gray-600 text-center mt-4">
+              New to SplitWise?{" "}
               <Link
                 to="/register"
-                className="font-semibold text-sky-600 hover:text-sky-700"
+                className="font-bold text-sky-600 hover:text-sky-700 underline underline-offset-4"
               >
                 Create an account
               </Link>
-            </p>
+            </motion.p>
           </div>
 
           {/* Small Footer */}
-          <div className="mt-8 text-center text-xs text-gray-400">
-            Secure login • Live happily • Save friendship
+          <div className="mt-12 text-center text-xs text-gray-400 font-bold uppercase tracking-widest">
+            Secure • Simple • Smart
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
+

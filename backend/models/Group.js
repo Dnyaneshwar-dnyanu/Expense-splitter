@@ -4,12 +4,8 @@ let groupSchema = mongoose.Schema({
     groupName: String,
     description: String,
     members: [{
-        id: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        },
-        name: String,
-        email: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }],
     expenses: [{
         type: mongoose.Schema.Types.ObjectId,

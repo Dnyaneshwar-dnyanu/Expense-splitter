@@ -20,61 +20,79 @@ export default function CreateGroup() {
     }, []);
 
     const fetchUser = async () => {
-        let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/getData`, {
-            method: 'GET',
-            credentials: 'include'
-        });
+        try {
+            let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/getUser`, {
+                method: 'GET',
+                credentials: 'include'
+            });
 
-        if (res.status === 200) {
-            let data = await res.json();
-            if (data.success) {
-                setUser(data.user);
-            }
-            else {
+            if (res.status === 200) {
+                let data = await res.json();
+                if (data.success) {
+                    setUser(data.user);
+                }
+                else {
+                    navigate('/login');
+                }
+            } else {
                 navigate('/login');
             }
+        } catch (error) {
+            console.error("Fetch user failed:", error);
+            toast.error("Network error, could not fetch user data.");
         }
     }
 
     const addMember = async () => {
-        if (!memberName.trim() || !memberEmail.trim()) {
-            toast.error("Enter the details of member to add!");
-            return;
-        };
+        try {
+            if (!memberName.trim() || !memberEmail.trim()) {
+                toast.error("Enter the details of member to add!");
+                return;
+            };
 
-        const alreadyMember = members.some((member) => member.email === memberEmail);
+            const alreadyMember = members.some((member) => member.email === memberEmail);
 
-        if (alreadyMember) {
-            return toast.error('This email is already added!');
+            if (alreadyMember) {
+                return toast.error('This email is already added!');
+            }
+
+            let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/validateMember`, {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                credentials: 'include',
+                body: JSON.stringify({ email: memberEmail })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(errorData.message || "Failed to validate member.");
+                return;
+            }
+
+            let data = await res.json();
+
+            if (!data.success) {
+                return toast.error(data.message);
+            }
+            else {
+                setMembers((prev) => [
+                    ...prev,
+                    {
+                        id: data.memberID,
+                        name: memberName.trim(),
+                        email: memberEmail.trim(),
+                    },
+                ]);
+
+                toast.success(data.message);
+            }
+
+            setMemberName("");
+            setMemberEmail("");
+        } catch (error) {
+            console.error("Add member failed:", error);
+            toast.error("Network error, could not add member.");
         }
-
-        let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/validateMember`, {
-            method: 'POST',
-            headers: { "Content-Type": "application/json" },
-            credentials: 'include',
-            body: JSON.stringify({ email: memberEmail })
-        });
-
-        let data = await res.json();
-
-        if (!data.success) {
-            return toast.error(data.message);
-        }
-        else {
-            setMembers((prev) => [
-                ...prev,
-                {
-                    id: data.memberID,
-                    name: memberName.trim(),
-                    email: memberEmail.trim(),
-                },
-            ]);
-
-            toast.success(data.message);
-        }
-
-        setMemberName("");
-        setMemberEmail("");
     };
 
     const removeMember = (id) => {
@@ -85,23 +103,37 @@ export default function CreateGroup() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const formData = {
-            groupName,
-            description,
-            members,
-        };
+        try {
+            const formData = {
+                groupName,
+                description,
+                members,
+            };
 
-        let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/group/${userID}/create_group`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(formData),
-        });
+            let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/group/${userID}/create_group`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(formData),
+            });
 
-        let data = await res.json();
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                toast.error(errorData.message || "Failed to create group.");
+                return;
+            }
 
-        if (data.success) {
-            navigate(`/${userID}/dashboard`);
+            let data = await res.json();
+
+            if (data.success) {
+                toast.success("Group created successfully!");
+                navigate(`/${userID}/dashboard`);
+            } else {
+                toast.error(data.message || "Failed to create group.");
+            }
+        } catch (error) {
+            console.error("Create group failed:", error);
+            toast.error("Network error, could not create group.");
         }
     };
 
@@ -115,7 +147,7 @@ export default function CreateGroup() {
                             Create Group
                         </h1>
                         <p className="text-gray-600 mt-1">
-                            Add group details and invite members to plan together.
+                            Add group details and invite members to start splitting.
                         </p>
                     </div>
 
@@ -132,7 +164,7 @@ export default function CreateGroup() {
                     {/* Form */}
                     <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 p-6 md:p-8">
                         <h2 className="text-xl font-bold text-gray-900">
-                            Group Information 🌍
+                            Group Information 💳
                         </h2>
 
                         <form onSubmit={handleSubmit} className="mt-6 space-y-6">
@@ -171,7 +203,7 @@ export default function CreateGroup() {
                             <div className="rounded-2xl border border-gray-200 p-5 bg-white/70">
                                 <h3 className="font-bold text-gray-900">Add Members 👥</h3>
                                 <p className="text-sm text-gray-600 mt-1">
-                                    Add people who will join this trip.
+                                    Add people who will share expenses in this group.
                                 </p>
 
                                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -228,6 +260,7 @@ export default function CreateGroup() {
                                         ))
                                     )}
                                 </div>
+                                
                             </div>
 
                             {/* Submit */}
@@ -269,7 +302,7 @@ export default function CreateGroup() {
                         </div>
 
                         <p className="mt-3 text-xs text-gray-500 text-center">
-                            Invite friends and make memories 🌴
+                            Invite friends and keep finances clear 🤝
                         </p>
                     </div>
                 </div>

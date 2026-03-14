@@ -4,7 +4,7 @@ import Dashboard from './pages/Dashboard'
 import GroupDetails from './pages/GroupDetails';
 import Register from './pages/Register';
 import Login from './pages/Login';
-import CreateGroup from './pages/createGroup';
+import CreateGroup from './pages/CreateGroup';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Profile from './pages/Profile';
 import Home from './pages/Home';
@@ -20,7 +20,11 @@ function App() {
               <Dashboard />
             </ProtectedRoute>
           } />
-          <Route path='/profile' element={<Profile/>} />
+          <Route path='/profile' element={
+            <ProtectedRoute>
+              <Profile/>
+            </ProtectedRoute>
+          } />
           <Route path="/:userID/group/:groupID" element={
             <ProtectedRoute>
               <GroupDetails />

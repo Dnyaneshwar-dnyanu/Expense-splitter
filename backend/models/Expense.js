@@ -13,7 +13,11 @@ let expenseSchema = mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
         },
-        sharedAmount: Number
+        sharedAmount: Number,
+        isSettled: {
+            type: Boolean,
+            default: false
+        }
     }],
     addedAt: {
         type: Date,

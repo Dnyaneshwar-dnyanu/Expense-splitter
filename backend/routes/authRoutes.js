@@ -38,21 +38,33 @@ router.get('/getUser', validateUser, async (req, res) => {
 });
 
 router.post('/updateUser', validateUser, async (req, res) => {
-     let form = req.body;
+     try {
+          let form = req.body;
 
-     let updatedUser = await userModel.findOneAndUpdate(
-          { _id: req.user._id}, 
-          {    name: form.name,
-               email: form.email,
-               phone: form.phone,
-               bio: form.bio
-          });
+          if (form.email && form.email !== req.user.email) {
+               let existingUser = await userModel.findOne({ email: form.email });
+               if (existingUser && existingUser._id.toString() !== req.user._id.toString()) {
+                    return res.status(400).send({ success: false, message: "Email already taken" });
+               }
+          }
 
-     if (updatedUser) {
-          return res.send({ success: true, message: "Profile updated successfully!"})
+          let updatedUser = await userModel.findOneAndUpdate(
+               { _id: req.user._id}, 
+               {    name: form.name,
+                    email: form.email,
+                    phone: form.phone,
+                    bio: form.bio
+               }, { new: true });
+
+          if (updatedUser) {
+               return res.send({ success: true, message: "Profile updated successfully!"})
+          }
+
+          res.send({ success: false, message: "Failed update profile, try again!"})
+     } catch (error) {
+          console.error("Error updating user:", error);
+          res.status(500).send({ success: false, message: "Internal Server Error" });
      }
-
-     res.send({ success: false, message: "Failed update profile, try again!"})
 });
 
 router.get('/logout', validateUser, logoutUser);

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 export default function Profile() {
-
+    const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [form, setForm] = useState({ name: "", email: "", phone: "", bio: ""});
     const [isEditing, setIsEditing] = useState(false);
@@ -13,20 +13,27 @@ export default function Profile() {
     }, []);
 
     const fetchUser = async () => {
-        let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/getUser`, {
-            method: 'GET',
-            credentials: 'include'
-        });
+        try {
+            let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/getUser`, {
+                method: 'GET',
+                credentials: 'include'
+            });
 
-        if (res.status === 200) {
-            let data = await res.json();
-            if (data.success) {
-                setUser(data.user);
-                setForm({ name: data.user.name, email: data.user.email, phone: data.user.phone, bio: data.user.bio });
-            }
-            else {
+            if (res.status === 200) {
+                let data = await res.json();
+                if (data.success) {
+                    setUser(data.user);
+                    setForm({ name: data.user.name, email: data.user.email, phone: data.user.phone || "", bio: data.user.bio || "" });
+                }
+                else {
+                    navigate('/login');
+                }
+            } else {
                 navigate('/login');
             }
+        } catch (error) {
+            console.error("Fetch user failed:", error);
+            toast.error("Failed to fetch user data.");
         }
     }
 
@@ -35,21 +42,44 @@ export default function Profile() {
     };
 
     const handleSave = async () => {
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/updateUser`, {
-            method: 'POST',
-            headers: { "Content-Type": "application/json"},
-            credentials: 'include',
-            body: JSON.stringify(form)
-        });
+        try {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/updateUser`, {
+                method: 'POST',
+                headers: { "Content-Type": "application/json"},
+                credentials: 'include',
+                body: JSON.stringify(form)
+            });
 
-        const data = await res.json();
-        if (data.success) {
-            setIsEditing(false);
-            fetchUser();
-            return toast.success(data.message);
+            const data = await res.json();
+            if (data.success) {
+                setIsEditing(false);
+                fetchUser();
+                return toast.success(data.message);
+            }
+            toast.error(data.message);
+        } catch (error) {
+            console.error("Update profile failed:", error);
+            toast.error("Network error, failed to update profile.");
         }
-        toast.error(data.message);
     };
+
+    const logout = async () => {
+        try {
+            let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/logout`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (res.status === 200) {
+                navigate('/login');
+            } else {
+                toast.error('Logout Failed!');
+            }
+        } catch (error) {
+            console.error("Logout failed:", error);
+            toast.error("Logout failed due to network error.");
+        }
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-sky-200 via-white to-emerald-200 px-4 py-10">
@@ -59,15 +89,15 @@ export default function Profile() {
                 <div className="flex items-center justify-between flex-wrap gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">
-                            My Profile 🧳
+                            My Profile 👤
                         </h1>
                         <p className="text-gray-600 mt-1">
-                            Manage your personal info & travel identity.
+                            Manage your personal info & group identity.
                         </p>
                     </div>
 
                     <Link
-                        to="/dashboard"
+                        to={user ? `/${user._id}/dashboard` : "/login"}
                         className="px-5 py-2.5 rounded-xl bg-white/80 border border-white/50 shadow hover:bg-white transition font-semibold text-gray-800"
                     >
                         ← Back to Dashboard
@@ -98,21 +128,24 @@ export default function Profile() {
                         <div className="mt-6 grid grid-cols-2 gap-4 text-center">
                             <div className="p-4 rounded-xl bg-white border border-gray-200">
                                 <p className="text-lg font-bold text-gray-900">
-                                    {user?.groups?.length}
+                                    {user?.groups?.length || 0}
                                 </p>
                                 <p className="text-xs text-gray-500">Groups</p>
                             </div>
 
                             <div className="p-4 rounded-xl bg-white border border-gray-200">
                                 <p className="text-lg font-bold text-gray-900">
-                                    12
+                                    {user?.groups?.length || 0}
                                 </p>
-                                <p className="text-xs text-gray-500">Trips</p>
+                                <p className="text-xs text-gray-500">Expenses</p>
                             </div>
                         </div>
 
                         {/* Logout */}
-                        <button className="mt-6 w-full py-3 rounded-xl border border-red-200 text-red-600 font-semibold hover:bg-red-50 transition">
+                        <button 
+                            onClick={logout}
+                            className="mt-6 w-full py-3 rounded-xl border border-red-200 text-red-600 font-semibold hover:bg-red-50 transition"
+                        >
                             Logout
                         </button>
                     </div>
@@ -234,7 +267,7 @@ export default function Profile() {
                     <div className="absolute top-6 left-10 w-14 h-14 bg-yellow-200 rounded-full blur-sm" />
 
                     <div className="absolute right-10 top-10 text-white font-bold">
-                        “Travel far, profile stronger.” ✈️
+                        “Split smart, live better.” 💳
                     </div>
                 </div>
 
