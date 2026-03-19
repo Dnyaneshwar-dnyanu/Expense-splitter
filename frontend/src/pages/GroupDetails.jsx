@@ -6,6 +6,7 @@ import AddExpense from "../components/expenses/AddExpense";
 import AddMember from "../components/groups/AddMember";
 import ExpenseList from "../components/expenses/ExpenseList";
 import { motion, AnimatePresence } from "framer-motion";
+import ConfirmModal from "../components/common/ConfirmModal";
 
 
 export default function GroupDetails() {
@@ -19,8 +20,9 @@ export default function GroupDetails() {
 
   const [group, setGroup] = useState();
   const [members, setMembers] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  // Tabs
   const [activeTab, setActiveTab] = useState("plan"); // "plan" | "add_expense" | "expenses_list" | "invoice"
 
   const [expenses, setExpenses] = useState([]);
@@ -28,6 +30,20 @@ export default function GroupDetails() {
 
   async function fetchGroup() {
     try {
+      // 1. Fetch current logged in user to verify isAdmin safely
+      const userRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/getUser`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+      let loggedInUserId = null;
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        if (userData.success && userData.user) {
+          loggedInUserId = userData.user._id;
+        }
+      }
+
+      // 2. Fetch group details
       let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/group/${groupID}/getGroup`, {
         method: 'GET',
         credentials: 'include'
@@ -46,6 +62,12 @@ export default function GroupDetails() {
         setGroup(formattedGroup);
         setMembers(data.group.members);
         setExpenses(data.group.expenses);
+        
+        // Check if current logged-in user is admin
+        const groupAdminId = data.group.admin?._id || data.group.admin;
+        if (groupAdminId && loggedInUserId && loggedInUserId.toString() === groupAdminId.toString()) {
+          setIsAdmin(true);
+        }
       }
       else {
         toast.error('Failed to fetch group details');
@@ -55,6 +77,25 @@ export default function GroupDetails() {
       console.error("Fetch group failed:", error);
       toast.error("Network error, could not fetch group details.");
       navigate(`/${userID}/dashboard`);
+    }
+  }
+
+  const handleDeleteGroup = async () => {
+    try {
+      let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/group/${groupID}/deleteGroup`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      let data = await res.json();
+      if (data.success) {
+        toast.success("Group deleted successfully");
+        navigate(`/${userID}/dashboard`);
+      } else {
+        toast.error(data.message || "Failed to delete group");
+      }
+    } catch (error) {
+      toast.error("Network error, failed to delete group");
     }
   }
 
@@ -70,6 +111,16 @@ export default function GroupDetails() {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-gradient-to-br from-sky-200 via-white to-emerald-200 px-4 py-10"
     >
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteGroup}
+        title="Delete Group?"
+        message="Are you sure you want to delete this group? All expenses will be permanently removed. This action cannot be undone."
+        confirmText="Delete Group"
+        type="danger"
+      />
+
       <div className="max-w-6xl mx-auto text-black">
         {/* Top Bar */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -174,6 +225,20 @@ export default function GroupDetails() {
                         </div>
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10" />
                       </div>
+
+                      {isAdmin && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-8 pt-6 border-t border-gray-100">
+                           <button
+                             onClick={() => setIsDeleteModalOpen(true)}
+                             className="w-full py-4 rounded-2xl border-2 border-red-100 text-red-600 font-black hover:bg-red-50 transition-colors"
+                           >
+                             Delete This Group 🗑️
+                           </button>
+                           <p className="text-center text-xs text-gray-400 mt-3 font-medium">
+                             Warning: This action cannot be undone.
+                           </p>
+                        </motion.div>
+                      )}
                     </div>
                   )}
 
@@ -184,12 +249,12 @@ export default function GroupDetails() {
 
                   {/* Expenses List */}
                   {activeTab === "expenses_list" && (
-                      <ExpenseList expenses={expenses} members={members} refreshData={fetchGroup} />
+                      <ExpenseList expenses={expenses} members={members} refreshData={fetchGroup} isAdmin={isAdmin} />
                   )}
 
                   {/* Invoice */}
                   {activeTab === "invoice" && (
-                    <Invoice group={group} />
+                    <Invoice group={group} isAdmin={isAdmin} />
                   )}
                 </motion.div>
               </AnimatePresence>
@@ -203,9 +268,11 @@ export default function GroupDetails() {
             </h2>
 
             {/* Add member */}
-            <div className="mt-4">
-              <AddMember refreshData={fetchGroup} />
-            </div>
+            {isAdmin && (
+              <div className="mt-4">
+                <AddMember refreshData={fetchGroup} existingMembers={members} />
+              </div>
+            )}
 
             {/* list */}
             <div className="mt-6 space-y-3">
@@ -217,7 +284,14 @@ export default function GroupDetails() {
                   transition={{ delay: idx * 0.05 }}
                   className="p-4 rounded-2xl border border-gray-100 bg-white/50 hover:bg-white hover:shadow-sm transition cursor-default"
                 >
-                  <p className="font-bold text-gray-900">{m.name}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-gray-900">{m.name}</p>
+                    {group?.admin === m._id || (typeof group?.admin === 'object' && group?.admin?._id === m._id) ? (
+                      <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        Admin
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="text-xs text-gray-500 font-medium truncate">{m.email}</p>
                 </motion.div>
               ))}

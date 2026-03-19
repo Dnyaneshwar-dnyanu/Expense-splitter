@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import FinalSettlement from "./FinalSettlement";
 import { motion } from "framer-motion";
 
-export default function Invoice({ group }) {
+export default function Invoice({ group, isAdmin }) {
   const userID = useParams().userID;
   const groupID = useParams().groupID;
 
@@ -205,7 +205,7 @@ export default function Invoice({ group }) {
 
       {/* Final Settlement */}
       <motion.div variants={itemVariants}>
-        <FinalSettlement giveExpenses={giveExpenses} getExpenses={getExpenses} members={group.members} onSettle={fetchInvoice} />
+        <FinalSettlement giveExpenses={giveExpenses} getExpenses={getExpenses} members={group.members} onSettle={fetchInvoice} isAdmin={isAdmin} />
       </motion.div>
     </motion.div>
   );

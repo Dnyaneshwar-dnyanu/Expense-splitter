@@ -1,13 +1,33 @@
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
 
 
 export default function Register() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/getUser`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.user) {
+            navigate(`/${data.user._id}/dashboard`);
+          }
+        }
+      } catch (err) {
+        console.error("Auth check failed", err);
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
+  const [form, setForm] = useState({ name: "", username: "", email: "", password: "" });
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -15,7 +35,7 @@ export default function Register() {
 
   const register = async () => {
     try {
-      if (form.email.trim().length < 3 || form.password.trim().length < 3) {
+      if (form.username.trim().length < 3 || form.email.trim().length < 3 || form.password.trim().length < 3) {
         toast.error("Fill the correct details!")
         return;
       }
@@ -108,6 +128,24 @@ export default function Register() {
                 value={form.name}
                 className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-sky-200 focus:border-sky-400 transition bg-white/50"
               />
+            </motion.div>
+
+            {/* Username */}
+            <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.45 }}>
+              <label className="text-sm font-bold text-gray-700 ml-1">
+                Username
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">@</span>
+                <input
+                  type="text"
+                  placeholder="username"
+                  onChange={handleChange}
+                  name="username"
+                  value={form.username}
+                  className="mt-2 w-full pl-9 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-sky-200 focus:border-sky-400 transition bg-white/50"
+                />
+              </div>
             </motion.div>
 
             {/* Email */}

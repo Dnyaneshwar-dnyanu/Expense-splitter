@@ -3,6 +3,7 @@ const router = express();
 const { validateUser } = require('../middleware/validateUser');
 const userModel = require('../models/User');
 const groupModel = require('../models/Group');
+const expenseModel = require('../models/Expense');
 
 
 router.post('/:userID/create_group', validateUser, async (req, res) => {
@@ -19,6 +20,7 @@ router.post('/:userID/create_group', validateUser, async (req, res) => {
         let createdGroup = await groupModel.create({
             groupName,
             description,
+            admin: user._id,
             members: memberIds
         });
 
@@ -37,10 +39,41 @@ router.post('/:userID/create_group', validateUser, async (req, res) => {
     }
 });
 
+router.delete('/:groupID/deleteGroup', validateUser, async (req, res) => {
+    try {
+        const group = await groupModel.findById(req.params.groupID);
+        if (!group) {
+            return res.status(404).send({ success: false, message: "Group not found" });
+        }
+
+        if (group.admin.toString() !== req.user._id.toString()) {
+            return res.status(403).send({ success: false, message: "Only admin can delete this group" });
+        }
+
+        // Remove group reference from all members
+        await userModel.updateMany(
+            { _id: { $in: group.members } },
+            { $pull: { groups: group._id } }
+        );
+
+        // Delete all expenses in this group
+        await expenseModel.deleteMany({ groupID: group._id });
+
+        // Delete the group
+        await groupModel.findByIdAndDelete(group._id);
+
+        res.send({ success: true, message: "Group deleted successfully!" });
+    } catch (error) {
+        console.error("Error deleting group:", error);
+        res.status(500).send({ success: false, message: "Failed to delete group" });
+    }
+});
+
 router.get('/:groupID/getGroup', async (req, res) => {
     try {
         const group = await groupModel.findOne({ _id: req.params.groupID })
                                     .populate('members', 'name email _id')
+                                    .populate('admin', 'name email _id')
                                     .populate({
                                         path: 'expenses',
                                         populate: [{
@@ -63,26 +96,34 @@ router.get('/:groupID/getGroup', async (req, res) => {
     }
 });
 
-router.post('/:groupID/addMember', async (req, res) => {
+router.post('/:groupID/addMember', validateUser, async (req, res) => {
     try {
-        let user = await userModel.findOne({ email: req.body.email });
-        if (!user) {
+        let userToAdd = await userModel.findOne({ email: req.body.email });
+        if (!userToAdd) {
             return res.send({ success: false, message: 'Invalid Member Email' });
         }
 
         const group = await groupModel.findOne({ _id: req.params.groupID }).populate('members', 'email');
+        if (!group) {
+            return res.status(404).send({ success: false, message: "Group not found" });
+        }
 
-        const alreadyMember = group.members.some((member) => member.email === user.email );
+        // Only admin can add members
+        if (group.admin.toString() !== req.user._id.toString()) {
+            return res.status(403).send({ success: false, message: "Only the admin can add new members" });
+        }
+
+        const alreadyMember = group.members.some((member) => member.email === userToAdd.email );
 
         if(alreadyMember) {
             return res.send({ success: false, message: "This member is already in the group"});
         }
 
-        group.members.push(user._id);
+        group.members.push(userToAdd._id);
         await group.save();
 
-        user.groups.push(group._id);
-        await user.save();
+        userToAdd.groups.push(group._id);
+        await userToAdd.save();
 
         res.send({ success: true, message: 'New member added successfully!' });
     } catch (error) {

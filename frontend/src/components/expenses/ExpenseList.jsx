@@ -2,18 +2,26 @@ import React, { useState, useMemo } from 'react'
 import { toast } from 'react-toastify';
 import EditExpenseModal from './EditExpenseModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import ConfirmModal from '../common/ConfirmModal';
 
-function ExpenseList({ expenses, members, refreshData }) {
+function ExpenseList({ expenses, members, refreshData, isAdmin }) {
     const [editingExpense, setEditingExpense] = useState(null);
     const [isManageMode, setIsManageMode] = useState(false);
     const [selectedExpenses, setSelectedExpenses] = useState([]);
 
+    // Modal states
+    const [isSingleDeleteModalOpen, setIsSingleDeleteModalOpen] = useState(false);
+    const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+    const [expenseToDelete, setExpenseToDelete] = useState(null);
+
     const toggleManageMode = () => {
+        if (!isAdmin) return;
         setIsManageMode(!isManageMode);
         setSelectedExpenses([]);
     };
 
     const toggleSelection = (id) => {
+        if (!isAdmin) return;
         if (selectedExpenses.includes(id)) {
             setSelectedExpenses(selectedExpenses.filter(expId => expId !== id));
         } else {
@@ -22,8 +30,8 @@ function ExpenseList({ expenses, members, refreshData }) {
     };
 
     const handleBulkDelete = async () => {
+        if (!isAdmin) return;
         if (selectedExpenses.length === 0) return;
-        if (!window.confirm(`Are you sure you want to delete ${selectedExpenses.length} selected expenses?`)) return;
 
         try {
             const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/expense/bulkDelete`, {
@@ -47,11 +55,11 @@ function ExpenseList({ expenses, members, refreshData }) {
         }
     };
 
-    const handleDelete = async (expenseID) => {
-        if (!window.confirm("Are you sure you want to delete this expense?")) return;
+    const handleDelete = async () => {
+        if (!isAdmin || !expenseToDelete) return;
 
         try {
-            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/expense/${expenseID}/deleteExpense`, {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/user/expense/${expenseToDelete}/deleteExpense`, {
                 method: 'DELETE',
                 credentials: 'include'
             });
@@ -59,6 +67,7 @@ function ExpenseList({ expenses, members, refreshData }) {
             const data = await res.json();
             if (data.success) {
                 toast.success(data.message);
+                setExpenseToDelete(null);
                 if (refreshData) refreshData();
             } else {
                 toast.error(data.message);
@@ -116,35 +125,60 @@ function ExpenseList({ expenses, members, refreshData }) {
                 </div>
                 
                 <div className="flex items-center gap-2">
-                    {isManageMode ? (
-                        <>
-                            <motion.button
-                                whileTap={{ scale: 0.95 }}
-                                onClick={handleBulkDelete}
-                                disabled={selectedExpenses.length === 0}
-                                className={`px-4 py-2 rounded-xl font-bold text-sm transition ${selectedExpenses.length > 0 ? 'bg-red-500 text-white shadow-lg shadow-red-100' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-                            >
-                                Delete Selected ({selectedExpenses.length})
-                            </motion.button>
+                    {isAdmin && (
+                        isManageMode ? (
+                            <>
+                                <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => setIsBulkDeleteModalOpen(true)}
+                                    disabled={selectedExpenses.length === 0}
+                                    className={`px-4 py-2 rounded-xl font-bold text-sm transition ${selectedExpenses.length > 0 ? 'bg-red-500 text-white shadow-lg shadow-red-100' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                                >
+                                    Delete Selected ({selectedExpenses.length})
+                                </motion.button>
+                                <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={toggleManageMode}
+                                    className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition"
+                                >
+                                    Cancel
+                                </motion.button>
+                            </>
+                        ) : (
                             <motion.button
                                 whileTap={{ scale: 0.95 }}
                                 onClick={toggleManageMode}
-                                className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition"
+                                className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-sm shadow-sm hover:bg-gray-50 transition"
                             >
-                                Cancel
+                                Manage History ⚙️
                             </motion.button>
-                        </>
-                    ) : (
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            onClick={toggleManageMode}
-                            className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 font-bold text-sm shadow-sm hover:bg-gray-50 transition"
-                        >
-                            Manage History ⚙️
-                        </motion.button>
+                        )
                     )}
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={isSingleDeleteModalOpen}
+                onClose={() => {
+                    setIsSingleDeleteModalOpen(false);
+                    setExpenseToDelete(null);
+                }}
+                onConfirm={handleDelete}
+                title="Delete Expense?"
+                message="Are you sure you want to delete this expense? This action cannot be undone."
+                confirmText="Delete"
+                type="danger"
+            />
+
+            <ConfirmModal
+                isOpen={isBulkDeleteModalOpen}
+                onClose={() => setIsBulkDeleteModalOpen(false)}
+                onConfirm={handleBulkDelete}
+                title="Delete Multiple Expenses?"
+                message={`Are you sure you want to delete ${selectedExpenses.length} selected expenses? This action cannot be undone.`}
+                confirmText={`Delete ${selectedExpenses.length} Items`}
+                type="danger"
+            />
 
             {Object.keys(groupedExpenses).length === 0 ? (
                 <div className="p-16 rounded-3xl bg-white border-2 border-dashed border-gray-100 text-gray-400 text-center">
@@ -234,11 +268,11 @@ function ExpenseList({ expenses, members, refreshData }) {
                                                 {new Date(e.addedAt).getDate()} {new Date(e.addedAt).toLocaleString('default', { month: 'short' })}
                                             </p>
                                             
-                                            {!isManageMode && (
+                                            {isAdmin && !isManageMode && (
                                                 <div className="flex gap-2 mt-4 opacity-0 group-hover:opacity-100 transition">
                                                     <motion.button 
                                                         whileTap={{ scale: 0.9 }}
-                                                        onClick={(e) => { e.stopPropagation(); setEditingExpense(e); }}
+                                                        onClick={(event) => { event.stopPropagation(); setEditingExpense(e); }}
                                                         className="p-2 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition shadow-sm"
                                                         title="Edit Expense"
                                                     >
@@ -246,7 +280,11 @@ function ExpenseList({ expenses, members, refreshData }) {
                                                     </motion.button>
                                                     <motion.button 
                                                         whileTap={{ scale: 0.9 }}
-                                                        onClick={(e) => { e.stopPropagation(); handleDelete(e._id); }}
+                                                        onClick={(event) => { 
+                                                            event.stopPropagation(); 
+                                                            setExpenseToDelete(e._id);
+                                                            setIsSingleDeleteModalOpen(true);
+                                                        }}
                                                         className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition shadow-sm"
                                                         title="Delete Expense"
                                                     >

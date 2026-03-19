@@ -155,14 +155,23 @@ router.post('/:groupID/settle/:withUserID', validateUser, async (req, res) => {
         const { groupID, withUserID } = req.params;
         const userID = req.user._id;
 
-        // 1. Mark debts where current user paid and 'withUserID' is a participant
+        const group = await groupModel.findById(groupID);
+        if (!group) {
+            return res.status(404).send({ success: false, message: "Group not found" });
+        }
+
+        if (group.admin.toString() !== userID.toString()) {
+            return res.status(403).send({ success: false, message: "Only the admin can settle up balances" });
+        }
+
+        // 1. Settle debts where Admin paid and Member owes
         await expenseModel.updateMany(
             { groupID, paidBy: userID, "participants.userID": withUserID },
             { $set: { "participants.$[elem].isSettled": true } },
             { arrayFilters: [{ "elem.userID": withUserID }] }
         );
 
-        // 2. Mark debts where 'withUserID' paid and current user is a participant
+        // 2. Settle debts where Member paid and Admin owes
         await expenseModel.updateMany(
             { groupID, paidBy: withUserID, "participants.userID": userID },
             { $set: { "participants.$[elem].isSettled": true } },
@@ -189,6 +198,10 @@ router.put('/:expenseID/editExpense', validateUser, async (req, res) => {
         const group = await groupModel.findById(oldExpense.groupID);
         if (!group) {
             return res.status(404).send({ success: false, message: "Group not found" });
+        }
+
+        if (group.admin.toString() !== req.user._id.toString()) {
+            return res.status(403).send({ success: false, message: "Only admin can edit expenses" });
         }
 
         let updatedParticipants = [];
@@ -239,6 +252,14 @@ router.delete('/:expenseID/deleteExpense', validateUser, async (req, res) => {
         }
 
         const group = await groupModel.findById(expense.groupID);
+        if (!group) {
+            return res.status(404).send({ success: false, message: "Group not found" });
+        }
+
+        if (group.admin.toString() !== req.user._id.toString()) {
+            return res.status(403).send({ success: false, message: "Only admin can delete expenses" });
+        }
+
         if (group) {
             group.totalGroupExpense -= expense.totalExpense;
             group.expenses = group.expenses.filter(id => id.toString() !== expenseID);
@@ -267,6 +288,14 @@ router.post('/bulkDelete', validateUser, async (req, res) => {
         
         if (expenses.length === 0) {
             return res.status(404).send({ success: false, message: "Expenses not found" });
+        }
+
+        // Check if user is admin of the group (assuming all expenses belong to same group for simplicity in frontend selection)
+        // If they belong to multiple groups, we should check each.
+        const firstExpense = expenses[0];
+        const group = await groupModel.findById(firstExpense.groupID);
+        if (!group || group.admin.toString() !== req.user._id.toString()) {
+            return res.status(403).send({ success: false, message: "Only admin can perform bulk delete" });
         }
 
         // Group expenses by their groupID to update group totals

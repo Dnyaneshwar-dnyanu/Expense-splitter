@@ -1,8 +1,30 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
 export default function Home() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/getUser`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.user) {
+            navigate(`/${data.user._id}/dashboard`);
+          }
+        }
+      } catch (err) {
+        console.error("Auth check failed", err);
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {

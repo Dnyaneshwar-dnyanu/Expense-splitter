@@ -33,6 +33,18 @@ router.get('/getUser', validateUser, async (req, res) => {
           return res.send({success: false});
      }
 
+     // If user has no username, generate one from email (for older accounts)
+     if (!user.username) {
+          let baseUsername = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+          let uniqueUsername = baseUsername;
+          let checkUsername = await userModel.findOne({ username: uniqueUsername });
+          if (checkUsername) {
+               uniqueUsername = `${baseUsername}${Math.floor(Math.random() * 1000)}`;
+          }
+          user.username = uniqueUsername;
+          await user.save();
+     }
+
      user.password = null;
      res.send({success: true, user: user});
 });
@@ -48,9 +60,17 @@ router.post('/updateUser', validateUser, async (req, res) => {
                }
           }
 
+          if (form.username && form.username !== req.user.username) {
+               let existingUser = await userModel.findOne({ username: form.username });
+               if (existingUser && existingUser._id.toString() !== req.user._id.toString()) {
+                    return res.status(400).send({ success: false, message: "Username already taken" });
+               }
+          }
+
           let updatedUser = await userModel.findOneAndUpdate(
                { _id: req.user._id}, 
                {    name: form.name,
+                    username: form.username,
                     email: form.email,
                     phone: form.phone,
                     bio: form.bio
@@ -68,5 +88,33 @@ router.post('/updateUser', validateUser, async (req, res) => {
 });
 
 router.get('/logout', validateUser, logoutUser);
+
+router.get('/searchUsers', validateUser, async (req, res) => {
+    try {
+        const query = req.query.q;
+        if (!query || query.length < 2) {
+            return res.send({ success: true, users: [] });
+        }
+
+        // Search for users by username or email, excluding the current user
+        const users = await userModel.find({
+            $and: [
+                {
+                    $or: [
+                        { username: { $regex: query, $options: 'i' } },
+                        { email: { $regex: query, $options: 'i' } },
+                        { name: { $regex: query, $options: 'i' } }
+                    ]
+                },
+                { _id: { $ne: req.user._id } }
+            ]
+        }).select('name username email _id').limit(10);
+
+        res.send({ success: true, users });
+    } catch (error) {
+        console.error("Error searching users:", error);
+        res.status(500).send({ success: false, message: "Internal Server Error" });
+    }
+});
 
 module.exports = router;

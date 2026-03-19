@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 export default function Profile() {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
-    const [form, setForm] = useState({ name: "", email: "", phone: "", bio: ""});
+    const [form, setForm] = useState({ name: "", username: "", email: "", phone: "", bio: ""});
     const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
@@ -23,7 +23,13 @@ export default function Profile() {
                 let data = await res.json();
                 if (data.success) {
                     setUser(data.user);
-                    setForm({ name: data.user.name, email: data.user.email, phone: data.user.phone || "", bio: data.user.bio || "" });
+                    setForm({ 
+                        name: data.user.name, 
+                        username: data.user.username || "",
+                        email: data.user.email, 
+                        phone: data.user.phone || "", 
+                        bio: data.user.bio || "" 
+                    });
                 }
                 else {
                     navigate('/login');
@@ -118,10 +124,11 @@ export default function Profile() {
                         <h2 className="mt-4 text-xl font-bold text-gray-900">
                             {user?.name}
                         </h2>
-                        <p className="text-gray-600 text-sm">{user?.email}</p>
+                        <p className="text-sky-600 font-bold text-sm">@{user?.username || 'user'}</p>
+                        <p className="text-gray-500 text-xs mt-1">{user?.email}</p>
 
-                        <p className="mt-4 text-sm text-gray-600 italic">
-                            {user?.bio}
+                        <p className="mt-4 text-sm text-gray-600 italic px-4">
+                            {user?.bio || "No bio yet. Add something cool! 🚀"}
                         </p>
 
                         {/* Stats */}
@@ -186,6 +193,20 @@ export default function Profile() {
                                 <input
                                     name="name"
                                     value={form.name}
+                                    onChange={handleChange}
+                                    disabled={!isEditing}
+                                    className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/90 backdrop-blur-xl focus:outline-none focus:ring-4 focus:ring-sky-200 focus:border-sky-400 transition disabled:opacity-70"
+                                />
+                            </div>
+
+                            {/* Username */}
+                            <div>
+                                <label className="text-sm font-medium text-gray-700">
+                                    Username
+                                </label>
+                                <input
+                                    name="username"
+                                    value={form.username}
                                     onChange={handleChange}
                                     disabled={!isEditing}
                                     className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-200 bg-white/90 backdrop-blur-xl focus:outline-none focus:ring-4 focus:ring-sky-200 focus:border-sky-400 transition disabled:opacity-70"

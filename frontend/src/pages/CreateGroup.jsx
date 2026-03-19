@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import UserSearch from "../components/common/UserSearch";
 
 export default function CreateGroup() {
     const navigate = useNavigate();
@@ -8,9 +9,6 @@ export default function CreateGroup() {
 
     const [groupName, setGroupName] = useState("");
     const [description, setDescription] = useState("");
-
-    const [memberName, setMemberName] = useState("");
-    const [memberEmail, setMemberEmail] = useState("");
 
     const [members, setMembers] = useState([]);
     const [user, setUser] = useState(null);
@@ -43,56 +41,23 @@ export default function CreateGroup() {
         }
     }
 
-    const addMember = async () => {
-        try {
-            if (!memberName.trim() || !memberEmail.trim()) {
-                toast.error("Enter the details of member to add!");
-                return;
-            };
-
-            const alreadyMember = members.some((member) => member.email === memberEmail);
-
-            if (alreadyMember) {
-                return toast.error('This email is already added!');
-            }
-
-            let res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/validateMember`, {
-                method: 'POST',
-                headers: { "Content-Type": "application/json" },
-                credentials: 'include',
-                body: JSON.stringify({ email: memberEmail })
-            });
-
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                toast.error(errorData.message || "Failed to validate member.");
-                return;
-            }
-
-            let data = await res.json();
-
-            if (!data.success) {
-                return toast.error(data.message);
-            }
-            else {
-                setMembers((prev) => [
-                    ...prev,
-                    {
-                        id: data.memberID,
-                        name: memberName.trim(),
-                        email: memberEmail.trim(),
-                    },
-                ]);
-
-                toast.success(data.message);
-            }
-
-            setMemberName("");
-            setMemberEmail("");
-        } catch (error) {
-            console.error("Add member failed:", error);
-            toast.error("Network error, could not add member.");
+    const handleSelectMember = (selectedUser) => {
+        const alreadyMember = members.some((m) => m.id === selectedUser._id);
+        if (alreadyMember) {
+            toast.error('This user is already added!');
+            return;
         }
+
+        setMembers((prev) => [
+            ...prev,
+            {
+                id: selectedUser._id,
+                name: selectedUser.name,
+                username: selectedUser.username,
+                email: selectedUser.email,
+            },
+        ]);
+        toast.success(`${selectedUser.name} added!`);
     };
 
     const removeMember = (id) => {
@@ -144,7 +109,7 @@ export default function CreateGroup() {
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">
-                            Create Group
+                            Create Group 👥
                         </h1>
                         <p className="text-gray-600 mt-1">
                             Add group details and invite members to start splitting.
@@ -202,59 +167,45 @@ export default function CreateGroup() {
                             {/* Member Add */}
                             <div className="rounded-2xl border border-gray-200 p-5 bg-white/70">
                                 <h3 className="font-bold text-gray-900">Add Members 👥</h3>
-                                <p className="text-sm text-gray-600 mt-1">
-                                    Add people who will share expenses in this group.
+                                <p className="text-sm text-gray-600 mt-1 mb-4">
+                                    Search by @username or email to invite friends.
                                 </p>
 
-                                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <input
-                                        type="text"
-                                        value={memberName}
-                                        onChange={(e) => setMemberName(e.target.value)}
-                                        placeholder="Member name"
-                                        className="px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-sky-200 focus:border-sky-400 transition"
-                                        />
-
-                                    <input
-                                        type="email"
-                                        value={memberEmail}
-                                        onChange={(e) => setMemberEmail(e.target.value)}
-                                        placeholder="Member email"
-                                        className="px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-emerald-200 focus:border-emerald-400 transition"
-                                    />
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={addMember}
-                                    className="mt-4 w-full md:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 text-white font-semibold shadow hover:opacity-90 transition"
-                                >
-                                    + Add Member
-                                </button>
+                                <UserSearch 
+                                    onSelect={handleSelectMember} 
+                                    placeholder="Search to add members..."
+                                    excludeList={[...(user ? [user._id] : []), ...members.map(m => m.id)]}
+                                />
 
                                 {/* Members list */}
                                 <div className="mt-6 space-y-3">
                                     {members.length === 0 ? (
-                                        <p className="text-sm text-gray-500">
-                                            No members added yet.
-                                        </p>
+                                        <div className="p-8 text-center bg-white/50 rounded-xl border-2 border-dashed border-gray-100 text-gray-400">
+                                            <p className="font-bold text-sm uppercase tracking-widest">No members added yet</p>
+                                        </div>
                                     ) : (
                                         members.map((m) => (
                                             <div
                                                 key={m.id}
-                                                className="flex items-center justify-between gap-4 p-4 rounded-xl border border-gray-200 bg-white"
+                                                className="flex items-center justify-between gap-4 p-4 rounded-xl border border-gray-200 bg-white shadow-sm"
                                             >
-                                                <div>
-                                                    <p className="font-semibold text-gray-900">{m.name}</p>
-                                                    <p className="text-sm text-gray-600">{m.email}</p>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-sky-50 flex items-center justify-center text-sky-600 font-bold">
+                                                        {m.name.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-900 leading-tight">{m.name}</p>
+                                                        <p className="text-xs text-sky-600 font-bold">@{m.username || 'user'}</p>
+                                                    </div>
                                                 </div>
 
                                                 <button
                                                     type="button"
                                                     onClick={() => removeMember(m.id)}
-                                                    className="px-4 py-2 rounded-lg border border-red-200 text-red-600 font-semibold hover:bg-red-50 transition"
+                                                    className="p-2 rounded-lg border border-red-100 text-red-500 hover:bg-red-50 transition"
+                                                    title="Remove Member"
                                                 >
-                                                    Remove
+                                                    🗑️
                                                 </button>
                                             </div>
                                         ))
@@ -266,7 +217,7 @@ export default function CreateGroup() {
                             {/* Submit */}
                             <button
                                 type="submit"
-                                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 text-white font-semibold shadow-lg hover:opacity-90 transition"
+                                className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 text-white font-black shadow-lg hover:shadow-xl transition-all scale-100 active:scale-95"
                             >
                                 Create Group ✅
                             </button>
@@ -278,30 +229,50 @@ export default function CreateGroup() {
                         <h2 className="text-xl font-bold text-gray-900">Preview ✨</h2>
 
                         <div className="mt-5 p-5 rounded-2xl bg-gradient-to-br from-sky-500 to-emerald-500 text-white shadow-lg">
-                            <p className="text-sm text-white/90">Group</p>
-                            <h3 className="text-xl font-bold mt-1">
+                            <p className="text-xs font-bold uppercase tracking-widest opacity-80">Group</p>
+                            <h3 className="text-xl font-black mt-1 truncate">
                                 {groupName || "Your Group Name"}
                             </h3>
 
-                            <p className="text-sm text-white/90 mt-4">Description</p>
-                            <p className="font-semibold text-lg">
-                                {description || "Your Description"}
+                            <p className="text-xs font-bold uppercase tracking-widest mt-4 opacity-80">Description</p>
+                            <p className="font-bold text-sm mt-1 line-clamp-2 italic">
+                                "{description || "No description yet"}"
                             </p>
 
-                            <p className="mt-4 text-sm text-white/90">
-                                Members: <span className="font-bold">{members.length}</span>
-                            </p>
+                            <div className="mt-6 flex items-center justify-between">
+                                <p className="text-xs font-bold uppercase tracking-widest opacity-80">
+                                    Members
+                                </p>
+                                <span className="px-2 py-0.5 rounded-lg bg-white/20 font-black text-xs">
+                                    {members.length + 1} Total
+                                </span>
+                            </div>
+                            <div className="flex -space-x-2 mt-2">
+                                <div className="w-8 h-8 rounded-full border-2 border-white bg-white/30 flex items-center justify-center text-[10px] font-black">
+                                    YOU
+                                </div>
+                                {members.slice(0, 4).map((m, idx) => (
+                                    <div key={idx} className="w-8 h-8 rounded-full border-2 border-white bg-white/20 flex items-center justify-center text-[10px] font-black">
+                                        {m.name.charAt(0)}
+                                    </div>
+                                ))}
+                                {members.length > 4 && (
+                                    <div className="w-8 h-8 rounded-full border-2 border-white bg-white/10 flex items-center justify-center text-[10px] font-black">
+                                        +{members.length - 4}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Illustration */}
-                        <div className="mt-6 relative h-32 overflow-hidden rounded-2xl bg-gradient-to-br from-sky-500 to-emerald-500">
+                        <div className="mt-6 relative h-32 overflow-hidden rounded-2xl bg-gradient-to-br from-sky-500 to-emerald-500/80">
                             <div className="absolute bottom-0 left-0 w-full h-16 bg-black/20 rounded-t-[100px]" />
                             <div className="absolute bottom-0 left-10 w-32 h-14 bg-white/20 rounded-t-[80px]" />
                             <div className="absolute bottom-0 right-10 w-40 h-20 bg-white/15 rounded-t-[100px]" />
                             <div className="absolute top-3 left-6 w-10 h-10 bg-yellow-200 rounded-full blur-sm" />
                         </div>
 
-                        <p className="mt-3 text-xs text-gray-500 text-center">
+                        <p className="mt-4 text-xs text-gray-500 text-center font-bold uppercase tracking-widest">
                             Invite friends and keep finances clear 🤝
                         </p>
                     </div>
