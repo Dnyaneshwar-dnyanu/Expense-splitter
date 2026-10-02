@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express();
+const mongoose = require('mongoose');
 const groupModel = require('./../models/Group');
 const expenseModel = require('./../models/Expense');
 const { validateUser } = require('./../middleware/validateUser');
@@ -7,7 +8,7 @@ const { simplifyDebts } = require('./../utils/settlementOptimizer');
 
 router.post('/:groupID/addExpense', validateUser, async (req, res) => {
     try {
-        let { spentFor, paidBy, totalExpense, splitType, participants, customAmounts } = req.body;
+        let { spentFor, paidBy, totalExpense, splitType, participants, customAmounts, category } = req.body;
         let groupID = req.params.groupID;
 
         let group = await groupModel.findOne({ _id: groupID });
@@ -42,6 +43,7 @@ router.post('/:groupID/addExpense', validateUser, async (req, res) => {
 
         const expense = await expenseModel.create({
             spentFor,
+            category: category || 'Other',
             totalExpense,
             paidBy,
             participants: updatedParticipants,
@@ -178,6 +180,197 @@ router.get('/:groupID/optimizedSettlements', validateUser, async (req, res) => {
     }
 });
 
+router.get('/:groupID/analytics', validateUser, async (req, res) => {
+    try {
+        const { groupID } = req.params;
+
+        const group = await groupModel.findById(groupID).populate('members', 'name email _id');
+        if (!group) {
+            return res.status(404).send({ success: false, message: "Group not found" });
+        }
+
+        const isMember = group.members.some(m => m._id.toString() === req.user._id.toString());
+        if (!isMember) {
+            return res.status(403).send({ success: false, message: "Access denied: You are not a member of this group" });
+        }
+
+        const groupObjectId = new mongoose.Types.ObjectId(groupID);
+
+        const [aggregationResult] = await expenseModel.aggregate([
+            { $match: { groupID: groupObjectId } },
+            {
+                $facet: {
+                    summary: [
+                        {
+                            $group: {
+                                _id: null,
+                                totalSpending: { $sum: "$totalExpense" },
+                                count: { $sum: 1 },
+                                avgExpense: { $avg: "$totalExpense" },
+                                maxExpense: { $max: "$totalExpense" }
+                            }
+                        }
+                    ],
+                    highestExpense: [
+                        { $sort: { totalExpense: -1 } },
+                        { $limit: 1 },
+                        {
+                            $lookup: {
+                                from: "users",
+                                localField: "paidBy",
+                                foreignField: "_id",
+                                as: "payer"
+                            }
+                        },
+                        { $unwind: { path: "$payer", preserveNullAndEmptyArrays: true } },
+                        {
+                            $project: {
+                                spentFor: 1,
+                                totalExpense: 1,
+                                category: { $ifNull: ["$category", "Other"] },
+                                addedAt: 1,
+                                payerName: { $ifNull: ["$payer.name", "Unknown"] }
+                            }
+                        }
+                    ],
+                    byCategory: [
+                        {
+                            $group: {
+                                _id: { $ifNull: ["$category", "Other"] },
+                                totalAmount: { $sum: "$totalExpense" },
+                                count: { $sum: 1 }
+                            }
+                        },
+                        { $sort: { totalAmount: -1 } }
+                    ],
+                    monthlyTrend: [
+                        {
+                            $group: {
+                                _id: {
+                                    $dateToString: { format: "%Y-%m", date: "$addedAt" }
+                                },
+                                totalAmount: { $sum: "$totalExpense" },
+                                count: { $sum: 1 }
+                            }
+                        },
+                        { $sort: { _id: 1 } }
+                    ],
+                    memberPaid: [
+                        {
+                            $group: {
+                                _id: "$paidBy",
+                                totalPaid: { $sum: "$totalExpense" },
+                                count: { $sum: 1 }
+                            }
+                        }
+                    ],
+                    memberConsumed: [
+                        { $unwind: "$participants" },
+                        {
+                            $group: {
+                                _id: "$participants.userID",
+                                totalConsumed: { $sum: "$participants.sharedAmount" },
+                                settledAmount: {
+                                    $sum: {
+                                        $cond: [{ $eq: ["$participants.isSettled", true] }, "$participants.sharedAmount", 0]
+                                    }
+                                },
+                                pendingAmount: {
+                                    $sum: {
+                                        $cond: [{ $eq: ["$participants.isSettled", false] }, "$participants.sharedAmount", 0]
+                                    }
+                                },
+                                count: { $sum: 1 }
+                            }
+                        }
+                    ]
+                }
+            }
+        ]);
+
+        const summaryData = (aggregationResult && aggregationResult.summary && aggregationResult.summary[0]) || {
+            totalSpending: 0,
+            count: 0,
+            avgExpense: 0,
+            maxExpense: 0
+        };
+
+        const totalSpending = summaryData.totalSpending || 0;
+        const totalExpensesCount = summaryData.count || 0;
+        const averagePerMember = group.members.length > 0 ? (totalSpending / group.members.length) : 0;
+
+        // Compute percentages for categories
+        const categoryBreakdown = ((aggregationResult && aggregationResult.byCategory) || []).map(cat => ({
+            category: cat._id,
+            totalAmount: Number(cat.totalAmount.toFixed(2)),
+            count: cat.count,
+            percentage: totalSpending > 0 ? Number(((cat.totalAmount / totalSpending) * 100).toFixed(1)) : 0
+        }));
+
+        // Build member contribution lookup
+        const paidMap = new Map();
+        ((aggregationResult && aggregationResult.memberPaid) || []).forEach(p => {
+            if (p._id) paidMap.set(p._id.toString(), p.totalPaid);
+        });
+
+        const consumedMap = new Map();
+        ((aggregationResult && aggregationResult.memberConsumed) || []).forEach(c => {
+            if (c._id) {
+                consumedMap.set(c._id.toString(), {
+                    totalConsumed: c.totalConsumed,
+                    settledAmount: c.settledAmount,
+                    pendingAmount: c.pendingAmount
+                });
+            }
+        });
+
+        const memberContributions = group.members.map(member => {
+            const mId = member._id.toString();
+            const totalPaid = Number((paidMap.get(mId) || 0).toFixed(2));
+            const consumedData = consumedMap.get(mId) || { totalConsumed: 0, settledAmount: 0, pendingAmount: 0 };
+            const totalConsumed = Number(consumedData.totalConsumed.toFixed(2));
+            const netBalance = Number((totalPaid - totalConsumed).toFixed(2));
+
+            return {
+                user: {
+                    _id: member._id,
+                    name: member.name,
+                    email: member.email
+                },
+                totalPaid,
+                totalConsumed,
+                netBalance,
+                settledAmount: Number(consumedData.settledAmount.toFixed(2)),
+                pendingAmount: Number(consumedData.pendingAmount.toFixed(2)),
+                paidRatio: totalSpending > 0 ? Number(((totalPaid / totalSpending) * 100).toFixed(1)) : 0
+            };
+        }).sort((a, b) => b.netBalance - a.netBalance);
+
+        // Format monthly trends
+        const monthlyTrends = ((aggregationResult && aggregationResult.monthlyTrend) || []).map(m => ({
+            month: m._id,
+            totalAmount: Number(m.totalAmount.toFixed(2)),
+            count: m.count
+        }));
+
+        res.send({
+            success: true,
+            summary: {
+                totalSpending: Number(totalSpending.toFixed(2)),
+                totalExpensesCount,
+                averagePerMember: Number(averagePerMember.toFixed(2)),
+                highestExpense: (aggregationResult && aggregationResult.highestExpense && aggregationResult.highestExpense[0]) || null
+            },
+            categoryBreakdown,
+            monthlyTrends,
+            memberContributions
+        });
+    } catch (error) {
+        console.error("Error generating analytics:", error);
+        res.status(500).send({ success: false, message: "Failed to generate group analytics" });
+    }
+});
+
 router.post('/:groupID/settle/:withUserID', validateUser, async (req, res) => {
     try {
         const { groupID, withUserID } = req.params;
@@ -221,7 +414,7 @@ router.post('/:groupID/settle/:withUserID', validateUser, async (req, res) => {
 
 router.put('/:expenseID/editExpense', validateUser, async (req, res) => {
     try {
-        let { spentFor, paidBy, totalExpense, splitType, participants, customAmounts } = req.body;
+        let { spentFor, paidBy, totalExpense, splitType, participants, customAmounts, category } = req.body;
         let expenseID = req.params.expenseID;
 
         const oldExpense = await expenseModel.findById(expenseID);
@@ -258,6 +451,7 @@ router.put('/:expenseID/editExpense', validateUser, async (req, res) => {
         const newAmount = Number(totalExpense);
 
         oldExpense.spentFor = spentFor;
+        if (category) oldExpense.category = category;
         oldExpense.totalExpense = newAmount;
         oldExpense.paidBy = paidBy;
         oldExpense.splitType = splitType;

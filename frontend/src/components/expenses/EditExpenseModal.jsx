@@ -4,11 +4,22 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function EditExpenseModal({ expense, members, onClose, onUpdate }) {
     const [spentFor, setSpentFor] = useState(expense.spentFor);
+    const [category, setCategory] = useState(expense.category || "Food & Dining");
     const [paidBy, setPaidBy] = useState(expense.paidBy._id);
     const [participants, setParticipants] = useState(expense.participants.map(p => p.userID._id));
     const [totalExpense, setTotalExpense] = useState(expense.totalExpense);
     const [splitType, setSplitType] = useState(expense.splitType || "equal");
     const [customAmounts, setCustomAmounts] = useState({});
+
+    const CATEGORIES = [
+        { label: "Food & Dining", icon: "🍔" },
+        { label: "Transportation", icon: "🚕" },
+        { label: "Entertainment", icon: "🎬" },
+        { label: "Shopping", icon: "🛍️" },
+        { label: "Utilities", icon: "💡" },
+        { label: "Lodging", icon: "🏨" },
+        { label: "Other", icon: "📦" }
+    ];
 
     useEffect(() => {
         if (expense.splitType === 'custom') {
@@ -51,7 +62,7 @@ export default function EditExpenseModal({ expense, members, onClose, onUpdate }
                 method: 'PUT',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ spentFor, paidBy, totalExpense, splitType, participants, customAmounts })
+                body: JSON.stringify({ spentFor, category, paidBy, totalExpense, splitType, participants, customAmounts })
             });
 
             const data = await res.json();
@@ -94,6 +105,28 @@ export default function EditExpenseModal({ expense, members, onClose, onUpdate }
                             onChange={(e) => setSpentFor(e.target.value)}
                             className="mt-2 w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-4 focus:ring-sky-100 transition focus:border-sky-400 outline-none"
                         />
+                    </div>
+
+                    {/* Category Selection */}
+                    <div>
+                        <label className="text-sm font-bold text-gray-700 ml-1 block mb-2">Category 🏷️</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {CATEGORIES.map((cat) => (
+                                <button
+                                    key={cat.label}
+                                    type="button"
+                                    onClick={() => setCategory(cat.label)}
+                                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 justify-center ${
+                                        category === cat.label
+                                            ? "bg-gradient-to-r from-emerald-500 to-sky-500 text-white border-transparent shadow-sm scale-102"
+                                            : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                                    }`}
+                                >
+                                    <span>{cat.icon}</span>
+                                    <span className="truncate">{cat.label}</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

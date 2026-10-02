@@ -233,10 +233,15 @@ function ExpenseList({ expenses, members, refreshData, isAdmin }) {
                                         </AnimatePresence>
 
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
                                                 <p className="font-black text-gray-900 text-lg group-hover:text-sky-600 transition">
                                                     {e.spentFor}
                                                 </p>
+                                                {e.category && (
+                                                    <span className="px-2 py-0.5 rounded-md text-[0.65rem] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                                        {e.category}
+                                                    </span>
+                                                )}
                                                 <span className={`px-2 py-0.5 rounded-md text-[0.6rem] font-black uppercase tracking-wider ${e.splitType === 'equal' ? 'bg-sky-50 text-sky-600' : 'bg-amber-50 text-amber-600'}`}>
                                                     {e.splitType}
                                                 </span>

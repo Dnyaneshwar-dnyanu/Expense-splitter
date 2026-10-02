@@ -2,6 +2,11 @@ const mongoose = require('mongoose');
 
 let expenseSchema = mongoose.Schema({
     spentFor: String,
+    category: {
+        type: String,
+        enum: ['Food & Dining', 'Transportation', 'Entertainment', 'Shopping', 'Utilities', 'Lodging', 'Other'],
+        default: 'Other'
+    },
     totalExpense: Number,
     paidBy: {
         type: mongoose.Schema.Types.ObjectId,

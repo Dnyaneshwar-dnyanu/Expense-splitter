@@ -5,6 +5,7 @@ import Invoice from "../components/settlements/Invoice";
 import AddExpense from "../components/expenses/AddExpense";
 import AddMember from "../components/groups/AddMember";
 import ExpenseList from "../components/expenses/ExpenseList";
+import GroupAnalytics from "../components/analytics/GroupAnalytics";
 import { motion, AnimatePresence } from "framer-motion";
 import ConfirmModal from "../components/common/ConfirmModal";
 
@@ -151,6 +152,7 @@ export default function GroupDetails() {
             <div className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-hide no-scrollbar">
               {[
                 { id: "plan", label: "Summary 📋" },
+                { id: "analytics", label: "Analytics 📈" },
                 { id: "add_expense", label: "Add Expense ➕" },
                 { id: "expenses_list", label: "History 💰" },
                 { id: "invoice", label: "Settlement 🧾" },
@@ -240,6 +242,11 @@ export default function GroupDetails() {
                         </motion.div>
                       )}
                     </div>
+                  )}
+
+                  {/* Analytics */}
+                  {activeTab === "analytics" && (
+                    <GroupAnalytics groupID={groupID} />
                   )}
 
                   {/* Add Expense */}
