@@ -3,12 +3,14 @@ import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import FinalSettlement from "./FinalSettlement";
+import SmartSettlement from "./SmartSettlement";
 import { motion } from "framer-motion";
 
 export default function Invoice({ group, isAdmin }) {
   const userID = useParams().userID;
   const groupID = useParams().groupID;
 
+  const [settleMode, setSettleMode] = useState("smart"); // "smart" | "pairwise"
   const [getExpenses, setGetExpenses] = useState({});
   const [giveExpenses, setGiveExpenses] = useState({});
   const [totalYouOwe, setTotalYouOwe] = useState(0);
@@ -104,109 +106,153 @@ export default function Invoice({ group, isAdmin }) {
         </motion.div>
       </div>
 
-      {/* Main: Giving & Getting */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Giving Money */}
-        <motion.div variants={itemVariants} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            Giving Money 💸
-          </h2>
-          <p className="text-gray-600 text-sm mt-1">
-            Pay these members for expenses they covered.
-          </p>
-
-          <div className="mt-6 space-y-4">
-            {Object.keys(giveExpenses).length === 0 ? (
-              <div className="p-5 rounded-2xl border border-dashed border-gray-200 text-gray-400 text-center font-medium">
-                ✅ You don’t owe anyone.
-              </div>
-            ) : (
-              Object.entries(giveExpenses).map(([payerId, payer]) => (
-                <motion.div
-                  whileHover={{ x: 5 }}
-                  key={payerId}
-                  className="p-5 rounded-2xl border border-gray-100 bg-gray-50/50 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-bold text-gray-900">{payer.name}</p>
-                      <p className="text-xs text-gray-500">{payer.email}</p>
-                    </div>
-                    <p className="font-black text-red-500 text-lg">
-                      {formatAmount(payer.totalExpense)}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 space-y-2">
-                    {payer.expenses.map((expense) => (
-                      <div
-                        key={expense.expenseId}
-                        className="flex justify-between p-3 rounded-xl bg-white border border-gray-200"
-                      >
-                        <p className="text-sm font-semibold text-gray-700">{expense.spentFor}</p>
-                        <p className="text-sm font-bold text-gray-900">{formatAmount(expense.sharedAmount)}</p>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              ))
-            )}
-          </div>
-        </motion.div>
-
-        {/* Getting Money */}
-        <motion.div variants={itemVariants} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            Getting Money 💰
-          </h2>
-          <p className="text-gray-600 text-sm mt-1">
-            These members have to pay you.
-          </p>
-
-          <div className="mt-6 space-y-4">
-            {Object.keys(getExpenses).length === 0 ? (
-              <div className="p-5 rounded-2xl border border-dashed border-gray-200 text-gray-400 text-center font-medium">
-                No one owes you currently.
-              </div>
-            ) : (
-              Object.entries(getExpenses).map(([giverId, giver]) => (
-                <motion.div
-                  whileHover={{ x: 5 }}
-                  key={giverId}
-                  className="p-5 rounded-2xl border border-gray-100 bg-gray-50/50 shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-bold text-gray-900">{giver.name}</p>
-                      <p className="text-xs text-gray-500">{giver.email}</p>
-                    </div>
-                    <p className="font-black text-emerald-600 text-lg">
-                      {formatAmount(giver.totalExpense)}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 space-y-2">
-                    {giver.expenses.map((expense) => (
-                      <div
-                        key={expense.expenseId}
-                        className="flex justify-between p-3 rounded-xl bg-white border border-gray-200"
-                      >
-                        <p className="text-sm font-semibold text-gray-700">{expense.spentFor}</p>
-                        <p className="text-sm font-bold text-gray-900">{formatAmount(expense.sharedAmount)}</p>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              ))
-            )}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Final Settlement */}
-      <motion.div variants={itemVariants}>
-        <FinalSettlement giveExpenses={giveExpenses} getExpenses={getExpenses} members={group.members} onSettle={fetchInvoice} isAdmin={isAdmin} />
+      {/* Mode Selector Toggle */}
+      <motion.div variants={itemVariants} className="flex items-center justify-between flex-wrap gap-3 bg-white p-2.5 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex items-center gap-1.5 p-1 bg-gray-100 rounded-xl">
+          <button
+            onClick={() => setSettleMode("smart")}
+            className={`px-4 py-2 rounded-lg text-xs md:text-sm font-black transition flex items-center gap-1.5 ${
+              settleMode === "smart"
+                ? "bg-gradient-to-r from-emerald-500 to-sky-500 text-white shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            ⚡ Smart Minimization (Greedy)
+          </button>
+          <button
+            onClick={() => setSettleMode("pairwise")}
+            className={`px-4 py-2 rounded-lg text-xs md:text-sm font-black transition flex items-center gap-1.5 ${
+              settleMode === "pairwise"
+                ? "bg-gradient-to-r from-sky-500 to-emerald-500 text-white shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            📑 Direct Pairwise Debts
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 font-semibold px-2">
+          {settleMode === "smart"
+            ? "Minimizes total payment transfers using greedy cash flow"
+            : "Shows unsimplified line-by-line pairwise debts"}
+        </p>
       </motion.div>
+
+      {settleMode === "smart" ? (
+        <motion.div variants={itemVariants}>
+          <SmartSettlement
+            groupID={groupID}
+            currentUserId={userID}
+            isAdmin={isAdmin}
+            onSettlementComplete={fetchInvoice}
+          />
+        </motion.div>
+      ) : (
+        <>
+          {/* Main: Giving & Getting */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Giving Money */}
+            <motion.div variants={itemVariants} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                Giving Money 💸
+              </h2>
+              <p className="text-gray-600 text-sm mt-1">
+                Pay these members for expenses they covered.
+              </p>
+
+              <div className="mt-6 space-y-4">
+                {Object.keys(giveExpenses).length === 0 ? (
+                  <div className="p-5 rounded-2xl border border-dashed border-gray-200 text-gray-400 text-center font-medium">
+                    ✅ You don’t owe anyone.
+                  </div>
+                ) : (
+                  Object.entries(giveExpenses).map(([payerId, payer]) => (
+                    <motion.div
+                      whileHover={{ x: 5 }}
+                      key={payerId}
+                      className="p-5 rounded-2xl border border-gray-100 bg-gray-50/50 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-bold text-gray-900">{payer.name}</p>
+                          <p className="text-xs text-gray-500">{payer.email}</p>
+                        </div>
+                        <p className="font-black text-red-500 text-lg">
+                          {formatAmount(payer.totalExpense)}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 space-y-2">
+                        {payer.expenses.map((expense) => (
+                          <div
+                            key={expense.expenseId}
+                            className="flex justify-between p-3 rounded-xl bg-white border border-gray-200"
+                          >
+                            <p className="text-sm font-semibold text-gray-700">{expense.spentFor}</p>
+                            <p className="text-sm font-bold text-gray-900">{formatAmount(expense.sharedAmount)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+
+            {/* Getting Money */}
+            <motion.div variants={itemVariants} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                Getting Money 💰
+              </h2>
+              <p className="text-gray-600 text-sm mt-1">
+                These members have to pay you.
+              </p>
+
+              <div className="mt-6 space-y-4">
+                {Object.keys(getExpenses).length === 0 ? (
+                  <div className="p-5 rounded-2xl border border-dashed border-gray-200 text-gray-400 text-center font-medium">
+                    No one owes you currently.
+                  </div>
+                ) : (
+                  Object.entries(getExpenses).map(([giverId, giver]) => (
+                    <motion.div
+                      whileHover={{ x: 5 }}
+                      key={giverId}
+                      className="p-5 rounded-2xl border border-gray-100 bg-gray-50/50 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-bold text-gray-900">{giver.name}</p>
+                          <p className="text-xs text-gray-500">{giver.email}</p>
+                        </div>
+                        <p className="font-black text-emerald-600 text-lg">
+                          {formatAmount(giver.totalExpense)}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 space-y-2">
+                        {giver.expenses.map((expense) => (
+                          <div
+                            key={expense.expenseId}
+                            className="flex justify-between p-3 rounded-xl bg-white border border-gray-200"
+                          >
+                            <p className="text-sm font-semibold text-gray-700">{expense.spentFor}</p>
+                            <p className="text-sm font-bold text-gray-900">{formatAmount(expense.sharedAmount)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Final Settlement */}
+          <motion.div variants={itemVariants}>
+            <FinalSettlement giveExpenses={giveExpenses} getExpenses={getExpenses} members={group.members} onSettle={fetchInvoice} isAdmin={isAdmin} />
+          </motion.div>
+        </>
+      )}
     </motion.div>
   );
 }

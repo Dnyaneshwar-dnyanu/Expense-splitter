@@ -3,6 +3,7 @@ const router = express();
 const groupModel = require('./../models/Group');
 const expenseModel = require('./../models/Expense');
 const { validateUser } = require('./../middleware/validateUser');
+const { simplifyDebts } = require('./../utils/settlementOptimizer');
 
 router.post('/:groupID/addExpense', validateUser, async (req, res) => {
     try {
@@ -150,32 +151,65 @@ router.get('/:userID/:groupID/getInvoice', async (req, res) => {
     }
 });
 
+router.get('/:groupID/optimizedSettlements', validateUser, async (req, res) => {
+    try {
+        const { groupID } = req.params;
+
+        const group = await groupModel.findById(groupID).populate('members', 'name email _id');
+        if (!group) {
+            return res.status(404).send({ success: false, message: "Group not found" });
+        }
+
+        // Verify requesting user is a member of the group
+        const isMember = group.members.some(m => m._id.toString() === req.user._id.toString());
+        if (!isMember) {
+            return res.status(403).send({ success: false, message: "Access denied: You are not a member of this group" });
+        }
+
+        const expenses = await expenseModel.find({ groupID })
+            .populate('paidBy', 'name email _id')
+            .populate('participants.userID', 'name email _id');
+
+        const result = simplifyDebts(expenses, group.members);
+        res.send(result);
+    } catch (error) {
+        console.error("Error optimizing settlements:", error);
+        res.status(500).send({ success: false, message: "Failed to calculate optimized settlements" });
+    }
+});
+
 router.post('/:groupID/settle/:withUserID', validateUser, async (req, res) => {
     try {
         const { groupID, withUserID } = req.params;
-        const userID = req.user._id;
+        const currentUserID = req.user._id.toString();
 
         const group = await groupModel.findById(groupID);
         if (!group) {
             return res.status(404).send({ success: false, message: "Group not found" });
         }
 
-        if (group.admin.toString() !== userID.toString()) {
-            return res.status(403).send({ success: false, message: "Only the admin can settle up balances" });
+        const isAdmin = group.admin.toString() === currentUserID;
+        const isMember = group.members.some(m => m.toString() === currentUserID);
+
+        if (!isMember) {
+            return res.status(403).send({ success: false, message: "Only group members can settle up" });
         }
 
-        // 1. Settle debts where Admin paid and Member owes
+        // Allow settling if admin, or if the logged-in user is one of the parties settling
+        const targetUserId = withUserID.toString();
+
+        // 1. Settle debts where currentUser paid and targetUser owes
         await expenseModel.updateMany(
-            { groupID, paidBy: userID, "participants.userID": withUserID },
+            { groupID, paidBy: currentUserID, "participants.userID": targetUserId },
             { $set: { "participants.$[elem].isSettled": true } },
-            { arrayFilters: [{ "elem.userID": withUserID }] }
+            { arrayFilters: [{ "elem.userID": targetUserId }] }
         );
 
-        // 2. Settle debts where Member paid and Admin owes
+        // 2. Settle debts where targetUser paid and currentUser owes
         await expenseModel.updateMany(
-            { groupID, paidBy: withUserID, "participants.userID": userID },
+            { groupID, paidBy: targetUserId, "participants.userID": currentUserID },
             { $set: { "participants.$[elem].isSettled": true } },
-            { arrayFilters: [{ "elem.userID": userID }] }
+            { arrayFilters: [{ "elem.userID": currentUserID }] }
         );
 
         res.send({ success: true, message: "Settled up successfully!" });

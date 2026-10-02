@@ -105,21 +105,19 @@ function FinalSettlement(props) {
                                 </p>
                             </div>
 
-                            {isAdmin && (
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => {
-                                        setSettleTarget({ id: member._id, name: member.name });
-                                        setIsSettleModalOpen(true);
-                                    }}
-                                    className={`px-6 py-2.5 rounded-xl font-black text-sm shadow-md transition ${net > 0 
-                                        ? "bg-emerald-500 text-white hover:bg-emerald-600" 
-                                        : "bg-red-500 text-white hover:bg-red-600"}`}
-                                >
-                                    Settle Up ✅
-                                </motion.button>
-                            )}
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => {
+                                    setSettleTarget({ id: member._id, name: member.name });
+                                    setIsSettleModalOpen(true);
+                                }}
+                                className={`px-6 py-2.5 rounded-xl font-black text-sm shadow-md transition ${net > 0 
+                                    ? "bg-emerald-500 text-white hover:bg-emerald-600" 
+                                    : "bg-red-500 text-white hover:bg-red-600"}`}
+                            >
+                                Settle Up ✅
+                            </motion.button>
                         </div>
                     );
                 })}

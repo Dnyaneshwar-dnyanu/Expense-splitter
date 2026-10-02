@@ -12,7 +12,7 @@ const cookieParser = require('cookie-parser');
 
 connectDB();
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 app.use(cors({
      origin: process.env.FRONTEND_URL,
