@@ -2,12 +2,15 @@
 <div align="center">
      <h1> 💳 SplitWise — Expense Sharing & Settlement Platform </h1>
      <br>
-    <img width="300" height="100" alt="SplitWise Logo" src="image/README/1791133091866.png" />
+    <img width="300" height="200" alt="SplitWise Logo" src="image/README/1791133091866.png" />
     <br>
     A full-stack web application designed to simplify <b>shared expense management</b> among friends, roommates, and groups.
     <br>
     The platform enables users to <b>create groups</b>, <b>split expenses</b>, and <b>track balances</b> with smart debt settlement and spending analytics.
+     <br>
 </div>
+
+---
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/) [![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/) [![Node.js](https://img.shields.io/badge/Node.js-Express_5-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/) [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_9-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/) [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/) [![Framer Motion](https://img.shields.io/badge/Framer_Motion-12-0055FF?logo=framer&logoColor=white)](https://www.framer.com/motion/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ](LICENSE)
@@ -112,16 +115,7 @@ After the transfer, both balances are updated. At least one member reaches a zer
 
 ## 🏗️ System Architecture
 
-```mermaid
-flowchart TD
-    U[User] --> FE[React + Vite Frontend]
-    FE -->|HTTP API requests| BE[Node.js + Express Backend]
-    BE -->|Mongoose queries and aggregation| DB[(MongoDB)]
-    BE --> AUTH[JWT Authentication]
-    BE --> SPLIT[Expense Split Logic]
-    BE --> SETTLE[Settlement Optimizer]
-    BE --> ANALYTICS[Analytics Aggregation]
-```
+<img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/3a490b0e-3a25-45fb-b037-54fddce14c78" />
 
 ### Application Responsibilities
 
