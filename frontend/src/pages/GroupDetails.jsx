@@ -63,7 +63,7 @@ export default function GroupDetails() {
         setGroup(formattedGroup);
         setMembers(data.group.members);
         setExpenses(data.group.expenses);
-        
+
         // Check if current logged-in user is admin
         const groupAdminId = data.group.admin?._id || data.group.admin;
         if (groupAdminId && loggedInUserId && loggedInUserId.toString() === groupAdminId.toString()) {
@@ -107,7 +107,7 @@ export default function GroupDetails() {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="min-h-screen bg-gradient-to-br from-sky-200 via-white to-emerald-200 px-4 py-10"
@@ -230,15 +230,15 @@ export default function GroupDetails() {
 
                       {isAdmin && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-8 pt-6 border-t border-gray-100">
-                           <button
-                             onClick={() => setIsDeleteModalOpen(true)}
-                             className="w-full py-4 rounded-2xl border-2 border-red-100 text-red-600 font-black hover:bg-red-50 transition-colors"
-                           >
-                             Delete This Group 🗑️
-                           </button>
-                           <p className="text-center text-xs text-gray-400 mt-3 font-medium">
-                             Warning: This action cannot be undone.
-                           </p>
+                          <button
+                            onClick={() => setIsDeleteModalOpen(true)}
+                            className="w-full py-4 rounded-2xl border-2 border-red-100 text-red-600 font-black hover:bg-red-50 transition-colors"
+                          >
+                            Delete This Group 🗑️
+                          </button>
+                          <p className="text-center text-xs text-gray-400 mt-3 font-medium">
+                            Warning: This action cannot be undone.
+                          </p>
                         </motion.div>
                       )}
                     </div>
@@ -256,7 +256,7 @@ export default function GroupDetails() {
 
                   {/* Expenses List */}
                   {activeTab === "expenses_list" && (
-                      <ExpenseList expenses={expenses} members={members} refreshData={fetchGroup} isAdmin={isAdmin} />
+                    <ExpenseList expenses={expenses} members={members} refreshData={fetchGroup} isAdmin={isAdmin} />
                   )}
 
                   {/* Invoice */}

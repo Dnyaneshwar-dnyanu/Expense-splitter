@@ -58,12 +58,14 @@ export default function Dashboard() {
   }
 
   function getEmoji() {
-    const start = 0x1f600;
-    const end = 0x1f637;
+    const happyEmojis = [
+      "😎", "🤩", "🥳", "😄", "😁",
+      "😆", "😂", "🤣", "😜", "🤪",
+      "😋", "🤗", "😇", "😺", "🙌",
+      "💃", "🕺", "🎉", "🚀", "✨"
+    ];
 
-    const code = Math.floor(Math.random() * (end - start)) + start;
-
-    return String.fromCodePoint(code);
+    return happyEmojis[Math.floor(Math.random() * happyEmojis.length)];
   }
 
   const containerVariants = {
@@ -77,14 +79,14 @@ export default function Dashboard() {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="min-h-screen bg-gradient-to-br from-sky-200 via-white to-emerald-200 px-4 py-10"
     >
       <div className="max-w-6xl mx-auto">
         {/* Top header */}
-        <motion.div 
+        <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
@@ -118,7 +120,7 @@ export default function Dashboard() {
             </h2>
 
             {/* Group cards */}
-            <motion.div 
+            <motion.div
               variants={containerVariants}
               initial="hidden"
               animate="visible"
@@ -126,23 +128,23 @@ export default function Dashboard() {
             >
               {
                 user?.groups?.length === 0 ? (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="p-10 rounded-2xl bg-white/50 border border-dashed border-gray-300 text-gray-500 text-center"
                   >
                     No groups yet, click on Create New Group to create.
                   </motion.div>
-                  ) : (
-                    user?.groups?.map((g) => (
-                      <GroupCard key={g._id} group={g}/>
-                    ))
-                  )}
+                ) : (
+                  user?.groups?.map((g) => (
+                    <GroupCard key={g._id} group={g} />
+                  ))
+                )}
             </motion.div>
           </div>
 
           {/* Right Section - Quick Card */}
-          <motion.div 
+          <motion.div
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}

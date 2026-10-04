@@ -75,7 +75,7 @@ export default function Invoice({ group, isAdmin }) {
   };
 
   return (
-    <motion.div 
+    <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -111,21 +111,19 @@ export default function Invoice({ group, isAdmin }) {
         <div className="flex items-center gap-1.5 p-1 bg-gray-100 rounded-xl">
           <button
             onClick={() => setSettleMode("smart")}
-            className={`px-4 py-2 rounded-lg text-xs md:text-sm font-black transition flex items-center gap-1.5 ${
-              settleMode === "smart"
+            className={`px-4 py-2 rounded-lg text-xs md:text-sm font-black transition flex items-center gap-1.5 ${settleMode === "smart"
                 ? "bg-gradient-to-r from-emerald-500 to-sky-500 text-white shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
-            }`}
+              }`}
           >
             ⚡ Smart Minimization (Greedy)
           </button>
           <button
             onClick={() => setSettleMode("pairwise")}
-            className={`px-4 py-2 rounded-lg text-xs md:text-sm font-black transition flex items-center gap-1.5 ${
-              settleMode === "pairwise"
+            className={`px-4 py-2 rounded-lg text-xs md:text-sm font-black transition flex items-center gap-1.5 ${settleMode === "pairwise"
                 ? "bg-gradient-to-r from-sky-500 to-emerald-500 text-white shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
-            }`}
+              }`}
           >
             📑 Direct Pairwise Debts
           </button>

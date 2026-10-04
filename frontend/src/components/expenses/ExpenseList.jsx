@@ -80,22 +80,22 @@ function ExpenseList({ expenses, members, refreshData, isAdmin }) {
     // Group expenses by Month & Year
     const groupedExpenses = useMemo(() => {
         if (!expenses) return {};
-        
+
         const groups = {};
-        
+
         // Sort expenses by date descending first
         const sortedExpenses = [...expenses].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
 
         sortedExpenses.forEach(expense => {
             const date = new Date(expense.addedAt);
             const monthYear = date.toLocaleString('default', { month: 'long', year: 'numeric' });
-            
+
             if (!groups[monthYear]) {
                 groups[monthYear] = [];
             }
             groups[monthYear].push(expense);
         });
-        
+
         return groups;
     }, [expenses]);
 
@@ -123,7 +123,7 @@ function ExpenseList({ expenses, members, refreshData, isAdmin }) {
                         Track and manage your shared bills
                     </p>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                     {isAdmin && (
                         isManageMode ? (
@@ -197,7 +197,7 @@ function ExpenseList({ expenses, members, refreshData, isAdmin }) {
                             <div className="h-[1px] w-full bg-gray-100" />
                         </div>
 
-                        <motion.div 
+                        <motion.div
                             variants={containerVariants}
                             initial="hidden"
                             animate="visible"
@@ -209,15 +209,15 @@ function ExpenseList({ expenses, members, refreshData, isAdmin }) {
                                     variants={itemVariants}
                                     whileHover={{ scale: 1.01 }}
                                     onClick={() => isManageMode && toggleSelection(e._id)}
-                                    className={`p-5 rounded-2xl border transition group cursor-pointer ${isManageMode && selectedExpenses.includes(e._id) 
-                                        ? 'bg-red-50/50 border-red-200 shadow-md ring-2 ring-red-100' 
+                                    className={`p-5 rounded-2xl border transition group cursor-pointer ${isManageMode && selectedExpenses.includes(e._id)
+                                        ? 'bg-red-50/50 border-red-200 shadow-md ring-2 ring-red-100'
                                         : 'bg-white border-gray-100 shadow-sm hover:shadow-md'}`}
                                 >
                                     <div className="flex items-start gap-4">
                                         {/* Checkbox for Manage Mode */}
                                         <AnimatePresence>
                                             {isManageMode && (
-                                                <motion.div 
+                                                <motion.div
                                                     initial={{ opacity: 0, scale: 0.5 }}
                                                     animate={{ opacity: 1, scale: 1 }}
                                                     exit={{ opacity: 0, scale: 0.5 }}
@@ -246,7 +246,7 @@ function ExpenseList({ expenses, members, refreshData, isAdmin }) {
                                                     {e.splitType}
                                                 </span>
                                             </div>
-                                            
+
                                             <div className="flex items-center gap-2 mt-1">
                                                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-[0.6rem] font-bold text-gray-500">
                                                     {e.paidBy?.name?.charAt(0)}
@@ -272,10 +272,10 @@ function ExpenseList({ expenses, members, refreshData, isAdmin }) {
                                             <p className="text-[0.6rem] text-gray-400 font-black mt-2 uppercase tracking-widest">
                                                 {new Date(e.addedAt).getDate()} {new Date(e.addedAt).toLocaleString('default', { month: 'short' })}
                                             </p>
-                                            
+
                                             {isAdmin && !isManageMode && (
                                                 <div className="flex gap-2 mt-4 opacity-0 group-hover:opacity-100 transition">
-                                                    <motion.button 
+                                                    <motion.button
                                                         whileTap={{ scale: 0.9 }}
                                                         onClick={(event) => { event.stopPropagation(); setEditingExpense(e); }}
                                                         className="p-2 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition shadow-sm"
@@ -283,10 +283,10 @@ function ExpenseList({ expenses, members, refreshData, isAdmin }) {
                                                     >
                                                         ✏️
                                                     </motion.button>
-                                                    <motion.button 
+                                                    <motion.button
                                                         whileTap={{ scale: 0.9 }}
-                                                        onClick={(event) => { 
-                                                            event.stopPropagation(); 
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
                                                             setExpenseToDelete(e._id);
                                                             setIsSingleDeleteModalOpen(true);
                                                         }}
@@ -307,10 +307,10 @@ function ExpenseList({ expenses, members, refreshData, isAdmin }) {
             )}
 
             {editingExpense && (
-                <EditExpenseModal 
-                    expense={editingExpense} 
-                    members={members} 
-                    onClose={() => setEditingExpense(null)} 
+                <EditExpenseModal
+                    expense={editingExpense}
+                    members={members}
+                    onClose={() => setEditingExpense(null)}
                     onUpdate={refreshData}
                 />
             )}

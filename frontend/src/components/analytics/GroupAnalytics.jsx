@@ -187,9 +187,8 @@ export default function GroupAnalytics({ groupID }) {
                   key={cat.category}
                   onMouseEnter={() => setActiveCategory(cat.category)}
                   onMouseLeave={() => setActiveCategory(null)}
-                  className={`p-3 rounded-xl border transition cursor-default ${
-                    isHovered ? "border-gray-300 bg-gray-50 shadow-xs" : "border-gray-100 bg-white"
-                  }`}
+                  className={`p-3 rounded-xl border transition cursor-default ${isHovered ? "border-gray-300 bg-gray-50 shadow-xs" : "border-gray-100 bg-white"
+                    }`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
@@ -315,13 +314,12 @@ export default function GroupAnalytics({ groupID }) {
                   {/* Net Badge */}
                   <div className="text-right">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-black inline-block ${
-                        isZero
+                      className={`px-3 py-1 rounded-full text-xs font-black inline-block ${isZero
                           ? "bg-gray-200 text-gray-700"
                           : isCreditor
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-rose-100 text-rose-800"
-                      }`}
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-rose-100 text-rose-800"
+                        }`}
                     >
                       {isZero ? "Balanced (₹0.00)" : `${isCreditor ? "+" : ""}${formatAmount(member.netBalance)} Net`}
                     </span>

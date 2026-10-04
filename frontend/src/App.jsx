@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard'
 import GroupDetails from './pages/GroupDetails';
@@ -14,7 +13,7 @@ function App() {
     <Router>
       <div>
         <Routes>
-          <Route path='/' element={ <Home />} />
+          <Route path='/' element={<Home />} />
           <Route path="/:userID/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
@@ -22,7 +21,7 @@ function App() {
           } />
           <Route path='/profile' element={
             <ProtectedRoute>
-              <Profile/>
+              <Profile />
             </ProtectedRoute>
           } />
           <Route path="/:userID/group/:groupID" element={

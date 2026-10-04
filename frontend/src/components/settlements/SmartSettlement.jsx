@@ -181,13 +181,12 @@ export default function SmartSettlement({ groupID, currentUserId, isAdmin, onSet
                 <motion.div
                   key={`${tx.from._id}-${tx.to._id}-${idx}`}
                   whileHover={{ scale: 1.01 }}
-                  className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${
-                    isUserSender
+                  className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${isUserSender
                       ? "border-red-200 bg-red-50/40"
                       : isUserReceiver
-                      ? "border-emerald-200 bg-emerald-50/40"
-                      : "border-gray-200 bg-gray-50/60"
-                  }`}
+                        ? "border-emerald-200 bg-emerald-50/40"
+                        : "border-gray-200 bg-gray-50/60"
+                    }`}
                 >
                   {/* From -> To Flow Visual */}
                   <div className="flex items-center gap-3 flex-1 flex-wrap">
@@ -265,13 +264,12 @@ export default function SmartSettlement({ groupID, currentUserId, isAdmin, onSet
             return (
               <div
                 key={item.user._id}
-                className={`p-3.5 rounded-xl border flex items-center justify-between ${
-                  isZero
+                className={`p-3.5 rounded-xl border flex items-center justify-between ${isZero
                     ? "border-gray-200 bg-gray-50/50"
                     : isPos
-                    ? "border-emerald-200 bg-emerald-50/40"
-                    : "border-red-200 bg-red-50/40"
-                }`}
+                      ? "border-emerald-200 bg-emerald-50/40"
+                      : "border-red-200 bg-red-50/40"
+                  }`}
               >
                 <div>
                   <p className="text-sm font-black text-gray-900">{item.user.name}</p>
@@ -279,9 +277,8 @@ export default function SmartSettlement({ groupID, currentUserId, isAdmin, onSet
                 </div>
                 <div className="text-right">
                   <p
-                    className={`text-sm font-black ${
-                      isZero ? "text-gray-400" : isPos ? "text-emerald-600" : "text-red-500"
-                    }`}
+                    className={`text-sm font-black ${isZero ? "text-gray-400" : isPos ? "text-emerald-600" : "text-red-500"
+                      }`}
                   >
                     {isZero ? "₹0.00" : `${isPos ? "+" : ""}${formatAmount(item.netBalance)}`}
                   </p>
