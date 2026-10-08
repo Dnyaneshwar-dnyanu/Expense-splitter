@@ -74,7 +74,7 @@ export default function SmartSettlement({ groupID, currentUserId, isAdmin, onSet
     return (
       <div className="p-8 text-center bg-white rounded-2xl shadow-sm border border-gray-100">
         <div className="inline-block w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-3 text-sm text-gray-500 font-semibold">Running greedy cash flow optimization...</p>
+        <p className="mt-3 text-sm text-gray-500 font-semibold">Calculating the </p>
       </div>
     );
   }
@@ -103,7 +103,7 @@ export default function SmartSettlement({ groupID, currentUserId, isAdmin, onSet
         type="success"
       />
 
-      {/* Algorithmic Efficiency Banner */}
+      {/* Algorithmic Efficiency Banner
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -141,16 +141,16 @@ export default function SmartSettlement({ groupID, currentUserId, isAdmin, onSet
             </div>
           </div>
         </div>
-      </motion.div>
+      </motion.div> */}
 
       {/* Suggested Minimised Transfers */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h4 className="text-lg font-black text-gray-900 flex items-center gap-2">
-              Optimal Settlement Plan 🎯
+              Settlement Plan 🎯
             </h4>
-            <p className="text-xs text-gray-500 font-semibold">
+            <p className="text-xs text-gray-500 font-semibold px-2">
               Complete these transfers to bring all members' balances to zero.
             </p>
           </div>

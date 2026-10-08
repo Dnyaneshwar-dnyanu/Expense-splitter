@@ -116,7 +116,7 @@ export default function Invoice({ group, isAdmin }) {
                 : "text-gray-600 hover:text-gray-900"
               }`}
           >
-            ⚡ Smart Minimization (Greedy)
+            ⚡ Smart Minimization
           </button>
           <button
             onClick={() => setSettleMode("pairwise")}

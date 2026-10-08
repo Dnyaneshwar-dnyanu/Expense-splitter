@@ -88,11 +88,6 @@ export default function GroupAnalytics({ groupID }) {
       {/* Top Banner & Refresh */}
       <div className="flex items-center justify-between flex-wrap gap-4 bg-gradient-to-r from-sky-600 via-indigo-600 to-emerald-600 p-6 rounded-2xl text-white shadow-xl">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider backdrop-blur-sm">
-              Single-Query $facet Aggregation
-            </span>
-          </div>
           <h3 className="text-2xl font-black mt-2">Spending Intelligence & Analytics 📈</h3>
           <p className="text-white/80 text-sm mt-0.5">
             Real-time financial breakdown, category distribution, and member participation balance.
